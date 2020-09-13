@@ -34,7 +34,7 @@ mut:
 	mem               []byte
 	// Flags for Conditions
 	flags             Flags
-	interrupt_enabled byte
+	interrupt_enabled bool
 }
 
 pub fn new(program &[]byte) State {
@@ -60,16 +60,27 @@ enum Instructions {
 	nop_0 = 0x00 // TODO: fill in and make the disassembler use
 }
 
+// NOTE: cy is not set here because different instructions
+// affect the carryover in different ways, but nearly all
+// affect the other flags in the same way.
+fn (mut state State) set_flags(x byte) {
+	state.flags.z = (x == 0)
+	// Set Sign (s) flag is MSB is set
+	state.flags.s = ((x & 0x80) != 0)
+	state.flags.p = parity(x)
+}
+
+// TODO: Can I use this function to do the subtraction as well?
+// Or will the cast to u16 mess up the signs? (I suspect not because
+// the bits themselves stay the same and the bitwise addition stays
+// the same.)
 fn (mut state State) execute_addition(a, b byte) {
 	answer := u16(a) + u16(b)
 	// Only use the bottom 8 bits of the answer, carryover
 	// is handled by flags (cy)
 	truncated := byte(answer & 0xff)
-	state.flags.z = (truncated == 0)
-	// Set Sign (s) flag is MSB is set
-	state.flags.s = ((answer & 0x80) != 0)
+	state.set_flags(truncated)
 	state.flags.cy = (answer > 0xff)
-	state.flags.p = parity(truncated)
 	state.a = truncated
 }
 
@@ -84,6 +95,16 @@ fn (mut state State) push(x1, x2 byte) {
 fn (mut state State) pop() (byte, byte) {
 	state.sp += 2
 	return state.mem[state.sp - 2], state.mem[state.sp - 1]
+}
+
+fn (mut state State) dad(a, b byte) {
+	hl := u32(create_address(state.h, state.l))
+	ab := u32(create_address(a, b))
+	answer := hl + ab
+	state.flags.cy = (answer > 0xffff)
+	h, l := break_address(u16(answer & 0xffff))
+	state.h = h
+	state.l = l
 }
 
 // TODO: Better separation of logging for debug and functionality;
@@ -102,8 +123,9 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x01 {
 			logger.debug('LXI    B,#$${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			// num_bytes = 3
-			return error('unimplemented')
+			state.b = state.mem[pc + 2]
+			state.c = state.mem[pc + 1]
+			state.pc += 2
 		}
 		0x02 {
 			logger.debug('STAX   B')
@@ -119,12 +141,13 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x05 {
 			logger.debug('DCR    B')
-			return error('unimplemented')
+			state.b--
+			state.set_flags(state.b)
 		}
 		0x06 {
 			logger.debug('MVI    B,#$${state.mem[pc+1]:02x}')
-			// num_bytes = 2
-			return error('unimplemented')
+			state.b = state.mem[pc + 1]
+			state.pc++
 		}
 		0x07 {
 			logger.debug('RLC')
@@ -136,7 +159,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x09 {
 			logger.debug('DAD    B')
-			return error('unimplemented')
+			state.dad(state.b, state.c)
 		}
 		0x0a {
 			logger.debug('LDAX   B')
@@ -152,12 +175,13 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x0d {
 			logger.debug('DCR    C')
-			return error('unimplemented')
+			state.c--
+			state.set_flags(state.c)
 		}
 		0x0e {
 			logger.debug('MVI    C,#$${state.mem[pc+1]:02x}')
-			// num_bytes = 2
-			return error('unimplemented')
+			state.c = state.mem[pc + 1]
+			state.pc++
 		}
 		0x0f {
 			logger.debug('RRC')
@@ -173,8 +197,9 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x11 {
 			logger.debug('LXI    D,#$${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			// num_bytes = 3
-			return error('unimplemented')
+			state.d = state.mem[pc + 2]
+			state.e = state.mem[pc + 1]
+			state.pc += 2
 		}
 		0x12 {
 			logger.debug('STAX   D')
@@ -182,7 +207,9 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x13 {
 			logger.debug('INX    D')
-			return error('unimplemented')
+			mut de := create_address(state.d, state.e)
+			de++
+			state.d, state.e = break_address(de)
 		}
 		0x14 {
 			logger.debug('INR    D')
@@ -207,11 +234,11 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x19 {
 			logger.debug('DAD    D')
-			return error('unimplemented')
+			state.dad(state.d, state.e)
 		}
 		0x1a {
 			logger.debug('LDAX   D')
-			return error('unimplemented')
+			state.a = state.mem[create_address(state.d, state.e)]
 		}
 		0x1b {
 			logger.debug('DCX    D')
@@ -245,8 +272,9 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x21 {
 			logger.debug('LXI    H,#$${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			// num_bytes = 3
-			return error('unimplemented')
+			state.h = state.mem[pc + 2]
+			state.l = state.mem[pc + 1]
+			state.pc += 2
 		}
 		0x22 {
 			logger.debug('SHLD   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
@@ -255,7 +283,9 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x23 {
 			logger.debug('INX    H')
-			return error('unimplemented')
+			mut hl := create_address(state.h, state.l)
+			hl++
+			state.h, state.l = break_address(hl)
 		}
 		0x24 {
 			logger.debug('INR    H')
@@ -267,8 +297,8 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x26 {
 			logger.debug('MVI    H,#$${state.mem[pc+1]:02x}')
-			// num_bytes = 2
-			return error('unimplemented')
+			state.h = state.mem[pc + 1]
+			state.pc++
 		}
 		0x27 {
 			logger.debug('DAA')
@@ -280,7 +310,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x29 {
 			logger.debug('DAD    H')
-			return error('unimplemented')
+			state.dad(state.h, state.l)
 		}
 		0x2a {
 			logger.debug('LHLD   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
@@ -319,8 +349,9 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x32 {
 			logger.debug('STA    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			// num_bytes = 3
-			return error('unimplemented')
+			addr := create_address(state.mem[pc + 2], state.mem[pc + 1])
+			state.mem[addr] = state.a
+			state.pc += 2
 		}
 		0x33 {
 			logger.debug('INX    SP')
@@ -336,8 +367,9 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x36 {
 			logger.debug('MVI    M,#$${state.mem[pc+1]:02x}')
-			// num_bytes = 2
-			return error('unimplemented')
+			addr := create_address(state.h, state.l)
+			state.mem[addr] = state.mem[pc + 1]
+			state.pc++
 		}
 		0x37 {
 			logger.debug('STC')
@@ -349,12 +381,14 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x39 {
 			logger.debug('DAD    SP')
-			return error('unimplemented')
+			sp1, sp2 := break_address(state.sp)
+			state.dad(sp1, sp2)
 		}
 		0x3a {
 			logger.debug('LDA    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			// num_bytes = 3
-			return error('unimplemented')
+			addr := create_address(state.mem[pc + 2], state.mem[pc + 1])
+			state.a = state.mem[addr]
+			state.pc += 2
 		}
 		0x3b {
 			logger.debug('DCX    SP')
@@ -370,8 +404,8 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x3e {
 			logger.debug('MVI    A,#$${state.mem[pc+1]:02x}')
-			// num_bytes = 2
-			return error('unimplemented')
+			state.a = state.mem[pc + 1]
+			state.pc++
 		}
 		0x3f {
 			logger.debug('CMC')
@@ -467,7 +501,8 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x56 {
 			logger.debug('MOV    D,M')
-			return error('unimplemented')
+			addr := create_address(state.h, state.l)
+			state.d = state.mem[addr]
 		}
 		0x57 {
 			logger.debug('MOV    D,A')
@@ -499,7 +534,8 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x5e {
 			logger.debug('MOV    E,M')
-			return error('unimplemented')
+			addr := create_address(state.h, state.l)
+			state.e = state.mem[addr]
 		}
 		0x5f {
 			logger.debug('MOV    E,A')
@@ -531,7 +567,8 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x66 {
 			logger.debug('MOV    H,M')
-			return error('unimplemented')
+			addr := create_address(state.h, state.l)
+			state.h = state.mem[addr]
 		}
 		0x67 {
 			logger.debug('MOV    H,A')
@@ -567,7 +604,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x6f {
 			logger.debug('MOV    L,A')
-			return error('unimplemented')
+			state.l = state.a
 		}
 		0x70 {
 			logger.debug('MOV    M,B')
@@ -599,7 +636,8 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x77 {
 			logger.debug('MOV    M,A')
-			return error('unimplemented')
+			addr := create_address(state.h, state.l)
+			state.mem[addr] = state.a
 		}
 		0x78 {
 			logger.debug('MOV    A,B')
@@ -611,15 +649,15 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x7a {
 			logger.debug('MOV    A,D')
-			return error('unimplemented')
+			state.a = state.d
 		}
 		0x7b {
 			logger.debug('MOV    A,E')
-			return error('unimplemented')
+			state.a = state.e
 		}
 		0x7c {
 			logger.debug('MOV    A,H')
-			return error('unimplemented')
+			state.a = state.h
 		}
 		0x7d {
 			logger.debug('MOV    A,L')
@@ -627,7 +665,8 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x7e {
 			logger.debug('MOV    A,M')
-			return error('unimplemented')
+			addr := create_address(state.h, state.l)
+			state.a = state.mem[addr]
 		}
 		0x7f {
 			logger.debug('MOV    A,A')
@@ -792,7 +831,9 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xa7 {
 			logger.debug('ANA    A')
-			return error('unimplemented')
+			state.a = state.a & state.a
+			state.set_flags(state.a)
+			state.flags.cy = false
 		}
 		0xa8 {
 			logger.debug('XRA    B')
@@ -824,7 +865,9 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xaf {
 			logger.debug('XRA    A')
-			return error('unimplemented')
+			state.a = state.a ^ state.a
+			state.set_flags(state.a)
+			state.flags.cy = false
 		}
 		0xb0 {
 			logger.debug('ORA    B')
@@ -896,9 +939,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xc1 {
 			logger.debug('POP    B')
-			c, b := state.pop()
-			state.b = b
-			state.c = c
+			state.c, state.b = state.pop()
 		}
 		0xc2 {
 			logger.debug('JNZ    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
@@ -912,7 +953,6 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0xc3 {
 			logger.debug('JMP    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			state.pc = create_address(state.mem[pc + 2], state.mem[pc + 1])
-			// TODO: is it bad that pc still gets incremented at end after jmp?
 		}
 		0xc4 {
 			logger.debug('CNZ    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
@@ -959,8 +999,8 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0xcd {
 			logger.debug('CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			return_addr := pc + 2
-			// left half
-			state.push(byte((return_addr >> 8) & 0xff), byte((return_addr & 0xff))) // right half
+			left, right := break_address(return_addr)
+			state.push(left, right)
 			// Jump after storing return address on stack
 			state.pc = create_address(state.mem[pc + 2], state.mem[pc + 1])
 		}
@@ -979,7 +1019,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xd1 {
 			logger.debug('POP    D')
-			return error('unimplemented')
+			state.e, state.d = state.pop()
 		}
 		0xd2 {
 			logger.debug('JNC    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
@@ -988,8 +1028,8 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xd3 {
 			logger.debug('OUT    #$${state.mem[pc+1]:02x}')
-			// num_bytes = 2
-			return error('unimplemented')
+			// TODO: Implement "special"
+			state.pc++
 		}
 		0xd4 {
 			logger.debug('CNC    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
@@ -998,7 +1038,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xd5 {
 			logger.debug('PUSH   D')
-			return error('unimplemented')
+			state.push(state.d, state.e)
 		}
 		0xd6 {
 			logger.debug('SUI    #$${state.mem[pc+1]:02x}')
@@ -1052,7 +1092,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xe1 {
 			logger.debug('POP    H')
-			return error('unimplemented')
+			state.l, state.h = state.pop()
 		}
 		0xe2 {
 			logger.debug('JPO    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
@@ -1070,16 +1110,13 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xe5 {
 			logger.debug('PUSH   H')
-			return error('unimplemented')
+			state.push(state.h, state.l)
 		}
 		0xe6 {
 			logger.debug('ANI    #$${state.mem[pc+1]:02x}')
 			// AND Immediate
 			answer := state.a & state.mem[pc + 1]
-			// TODO: Reduce code duplication with addition
-			state.flags.z = (answer == 0)
-			state.flags.s = ((answer & 0x80) != 0)
-			state.flags.p = parity(answer)
+			state.set_flags(answer)
 			state.flags.cy = false // Clear the carryover flag
 			state.a = answer
 			state.pc++ // Advance one for immediate byte
@@ -1103,7 +1140,9 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xeb {
 			logger.debug('XCHG')
-			return error('unimplemented')
+			temp1, temp2 := state.h, state.l
+			state.h, state.l = state.d, state.e
+			state.d, state.e = temp1, temp2
 		}
 		0xec {
 			logger.debug('CPE     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
@@ -1184,7 +1223,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xfb {
 			logger.debug('EI')
-			return error('unimplemented')
+			state.interrupt_enabled = true
 		}
 		0xfc {
 			logger.debug('CM     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
@@ -1198,11 +1237,13 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xfe {
 			logger.debug('CPI    #$${state.mem[pc+1]:02x}')
+			// TODO: Need to figure out my strategy for reducing duplication
+			// a bit better and ensure there is a clean and easy to follow flow
+			// in all cases. Can I create a function that also does this subtraction?
+			// How does that interact with the function that takes that and sets A,
+			// or that sets Carryover?
 			answer := state.a - state.mem[pc + 1]
-			// TODO: reduce code duplication with addition
-			state.flags.z = (answer == 0)
-			state.flags.s = ((answer & 0x80) != 0)
-			state.flags.p = parity(answer)
+			state.set_flags(answer)
 			// Wraparound (carryover) if the first element is less than
 			// the second
 			state.flags.cy = (state.a < state.mem[pc + 1])

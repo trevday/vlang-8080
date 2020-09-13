@@ -12,6 +12,10 @@ fn create_address(a, b byte) u16 {
 	return (a << 8) | b
 }
 
+fn break_address(addr u16) (byte, byte) {
+	return byte((addr >> 8) & 0xff), byte(addr & 0xff)
+}
+
 fn parity(x int) bool {
 	mut temp := x ^ (x >> 1)
 	temp = temp ^ (temp >> 2)
