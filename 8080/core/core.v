@@ -73,10 +73,6 @@ fn (mut state State) execute_addition(a, b byte) {
 	state.a = truncated
 }
 
-fn create_address(a, b byte) u16 {
-	return (a << 8) | b
-}
-
 // Pushes x1 and then x2 on to the stack
 fn (mut state State) push(x1, x2 byte) {
 	state.sp -= 2

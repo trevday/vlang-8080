@@ -8,6 +8,10 @@ fn bool_byte(b bool) byte {
 	}
 }
 
+fn create_address(a, b byte) u16 {
+	return (a << 8) | b
+}
+
 fn parity(x int) bool {
 	mut temp := x ^ (x >> 1)
 	temp = temp ^ (temp >> 2)
