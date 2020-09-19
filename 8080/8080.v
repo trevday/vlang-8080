@@ -11,7 +11,7 @@ fn main() {
 	fp.limit_free_args_to_exactly(1)
 	fp.skip_executable()
 	log_level_str := fp.string('log', 0, 'fatal', 'Log level, options are: fatal, error, warn, info, debug')
-	// TODO: I would prefer to use the match as an expression
+	// TODO (vcomp): I would prefer to use the match as an expression
 	// and assign direct to a variable, but the V compiler
 	// does not support an error and return, or even a panic,
 	// in the else case when assigning to a value.
