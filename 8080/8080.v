@@ -33,10 +33,16 @@ fn main() {
 			log_level_parsed = log.Level.debug
 		}
 		else {
-			eprintln('Invalid log level $log_level_str')
+			eprintln('Invalid log level: $log_level_str')
 			println(fp.usage())
 			return
 		}
+	}
+	start_addr := fp.int('addr', 0, 0, 'Start address of the loaded 8080 program in memory; must be >= 0 and < 65535')
+	if start_addr < 0 || start_addr > core.max_memory - 1 {
+		eprintln('Invalid start address: $start_addr')
+		println(fp.usage())
+		return
 	}
 	additional_args := fp.finalize() or {
 		eprintln(err)
@@ -53,7 +59,7 @@ fn main() {
 	}
 	mut logger := log.Log{}
 	logger.set_level(log_level_parsed)
-	mut state := core.new(source_bytes)
+	mut state := core.new(source_bytes, u16(start_addr))
 	for {
 		state.emulate(logger) or {
 			logger.error(err)

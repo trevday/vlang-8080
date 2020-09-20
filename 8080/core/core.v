@@ -2,6 +2,10 @@ module core
 
 import log
 
+pub const (
+	max_memory = 0xffff
+)
+
 struct Flags {
 mut:
 	// Is Zero
@@ -37,14 +41,15 @@ mut:
 	interrupt_enabled bool
 }
 
-pub fn new(program &[]byte) State {
+pub fn new(program &[]byte, start_addr u16) State {
 	mut state := State{
-		mem: []byte{len: 0xffff, init: 0}
+		mem: []byte{len: max_memory, init: 0}
 	}
-	// Copy program to $0x0000
+	// Copy program to start_addr
 	for i, b in program {
-		state.mem[i] = b
+		state.mem[i + start_addr] = b
 	}
+	state.pc = start_addr
 	return state
 }
 
