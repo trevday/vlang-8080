@@ -1175,7 +1175,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xde {
 			logger.debug('SBI    #$${state.mem[pc+1]:02x}')
-			state.execute_addition_and_store(state.a, -(u16(state.mem[pc + 1]) - u16(bool_byte(state.flags.cy))))
+			state.execute_addition_and_store(state.a, -(u16(state.mem[pc + 1])) - u16(bool_byte(state.flags.cy)))
 			state.pc++
 		}
 		0xdf {
