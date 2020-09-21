@@ -1,7 +1,7 @@
 import flag
 import log
 import os
-import core
+import cpu
 
 fn main() {
 	mut fp := flag.new_flag_parser(os.args)
@@ -39,7 +39,7 @@ fn main() {
 		}
 	}
 	start_addr := fp.int('addr', 0, 0, 'Start address of the loaded 8080 program in memory; must be >= 0 and < 65535')
-	if start_addr < 0 || start_addr > core.max_memory - 1 {
+	if start_addr < 0 || start_addr > cpu.max_memory - 1 {
 		eprintln('Invalid start address: $start_addr')
 		println(fp.usage())
 		return
@@ -59,7 +59,7 @@ fn main() {
 	}
 	mut logger := log.Log{}
 	logger.set_level(log_level_parsed)
-	mut state := core.new(source_bytes, u16(start_addr))
+	mut state := cpu.new(source_bytes, u16(start_addr))
 	for {
 		state.emulate(logger) or {
 			logger.error(err)

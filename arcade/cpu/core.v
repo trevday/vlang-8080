@@ -1,4 +1,4 @@
-module core
+module cpu
 
 import log
 

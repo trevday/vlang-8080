@@ -1,4 +1,4 @@
-module core
+module cpu
 
 fn bool_byte(b bool) byte {
 	if b {
