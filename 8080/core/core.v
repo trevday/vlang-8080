@@ -16,7 +16,7 @@ mut:
 	p  bool
 	// Carryover
 	cy bool
-	// TODO: Unused so far
+	// Auxiliary Carry
 	ac bool
 }
 
@@ -82,6 +82,7 @@ fn (mut state State) execute_addition(x1, x2 u16) byte {
 	truncated := byte(answer & 0xff)
 	state.set_flags(truncated)
 	state.flags.cy = (answer > 0xff)
+	state.flags.ac = ((x1 & 0xf) + (x2 & 0xf) > 0xf)
 	return truncated
 }
 
@@ -89,19 +90,38 @@ fn (mut state State) execute_addition_and_store(x1, x2 u16) {
 	state.a = state.execute_addition(x1, x2)
 }
 
+fn (mut state State) inr(x1 byte) byte {
+	res := x1 + 1
+	state.set_flags(res)
+	state.flags.ac = ((x1 & 0xf) + 0x1 > 0xf)
+	return res
+}
+
+fn (mut state State) dcr(x1 byte) byte {
+	res := x1 - 1
+	state.set_flags(res)
+	state.flags.ac = ((x1 & 0xf) + 0x1 > 0xf)
+	return res
+}
+
 fn (mut state State) adc(x1, x2 byte) {
 	new_x2 := u16(x2) + u16(bool_byte(state.flags.cy))
+	// TODO: Identify if there is an error when calculating auxiliary carry
+	// for ADC. What should it be measuring, the result of adding all 3 or
+	// the result of adding the original 2?
 	state.execute_addition_and_store(u16(x1), new_x2)
 }
 
 fn (mut state State) sbb(x1, x2 byte) {
 	new_x2 := u16(-x2) - u16(bool_byte(state.flags.cy))
+	// TODO: Same as ADC, determine if there is an issue with AC flag.
 	state.execute_addition_and_store(u16(x1), new_x2)
 }
 
 fn (mut state State) set_logic_flags(x byte) {
 	state.set_flags(x)
 	state.flags.cy = false
+	state.flags.ac = false
 }
 
 fn (mut state State) and(x1, x2 byte) {
@@ -186,13 +206,11 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x04 {
 			logger.debug('INR    B')
-			state.b++
-			state.set_flags(state.b)
+			state.b = state.inr(state.b)
 		}
 		0x05 {
 			logger.debug('DCR    B')
-			state.b--
-			state.set_flags(state.b)
+			state.b = state.dcr(state.b)
 		}
 		0x06 {
 			logger.debug('MVI    B,#$${state.mem[pc+1]:02x}')
@@ -227,13 +245,11 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x0c {
 			logger.debug('INR    C')
-			state.c++
-			state.set_flags(state.c)
+			state.c = state.inr(state.c)
 		}
 		0x0d {
 			logger.debug('DCR    C')
-			state.c--
-			state.set_flags(state.c)
+			state.c = state.dcr(state.c)
 		}
 		0x0e {
 			logger.debug('MVI    C,#$${state.mem[pc+1]:02x}')
@@ -270,13 +286,11 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x14 {
 			logger.debug('INR    D')
-			state.d++
-			state.set_flags(state.d)
+			state.d = state.inr(state.d)
 		}
 		0x15 {
 			logger.debug('DCR    D')
-			state.d--
-			state.set_flags(state.d)
+			state.d = state.dcr(state.d)
 		}
 		0x16 {
 			logger.debug('MVI    D,#$${state.mem[pc+1]:02x}')
@@ -312,13 +326,11 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x1c {
 			logger.debug('INR    E')
-			state.e++
-			state.set_flags(state.e)
+			state.e = state.inr(state.e)
 		}
 		0x1d {
 			logger.debug('DCR    E')
-			state.e--
-			state.set_flags(state.e)
+			state.e = state.dcr(state.e)
 		}
 		0x1e {
 			logger.debug('MVI    E,#$${state.mem[pc+1]:02x}')
@@ -359,13 +371,11 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x24 {
 			logger.debug('INR    H')
-			state.h++
-			state.set_flags(state.h)
+			state.h = state.inr(state.h)
 		}
 		0x25 {
 			logger.debug('DCR    H')
-			state.h--
-			state.set_flags(state.h)
+			state.h = state.dcr(state.h)
 		}
 		0x26 {
 			logger.debug('MVI    H,#$${state.mem[pc+1]:02x}')
@@ -374,7 +384,21 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x27 {
 			logger.debug('DAA')
-			return error('unimplemented')
+			orig_a, orig_cy := state.a, state.flags.cy
+			if (orig_a & 0xf) > 9 || state.flags.ac {
+				res := u16(state.a) + u16(6)
+				state.flags.cy = orig_cy || (res > 0xff)
+				state.flags.ac = true
+				state.a = byte(res & 0xff)
+			} else {
+				state.flags.ac = false
+			}
+			if orig_a > 0x99 || orig_cy {
+				state.a = state.a + 0x60
+				state.flags.cy = true
+			} else {
+				state.flags.cy = false
+			}
 		}
 		0x28 {
 			logger.debug('NOP')
@@ -399,13 +423,11 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x2c {
 			logger.debug('INR    L')
-			state.l++
-			state.set_flags(state.l)
+			state.l = state.inr(state.l)
 		}
 		0x2d {
 			logger.debug('DCR    L')
-			state.l--
-			state.set_flags(state.l)
+			state.l = state.dcr(state.l)
 		}
 		0x2e {
 			logger.debug('MVI    L,#$${state.mem[pc+1]:02x}')
@@ -438,14 +460,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0x34 {
 			logger.debug('INR    M')
 			hl := create_address(state.h, state.l)
-			state.mem[hl]++
-			state.set_flags(state.mem[hl])
+			state.mem[hl] = state.inr(state.mem[hl])
 		}
 		0x35 {
 			logger.debug('DCR    M')
 			hl := create_address(state.h, state.l)
-			state.mem[hl]--
-			state.set_flags(state.mem[hl])
+			state.mem[hl] = state.dcr(state.mem[hl])
 		}
 		0x36 {
 			logger.debug('MVI    M,#$${state.mem[pc+1]:02x}')
@@ -478,13 +498,11 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x3c {
 			logger.debug('INR    A')
-			state.a++
-			state.set_flags(state.a)
+			state.a = state.inr(state.a)
 		}
 		0x3d {
 			logger.debug('DCR    A')
-			state.a--
-			state.set_flags(state.a)
+			state.a = state.dcr(state.a)
 		}
 		0x3e {
 			logger.debug('MVI    A,#$${state.mem[pc+1]:02x}')
