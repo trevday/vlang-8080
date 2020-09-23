@@ -1,6 +1,6 @@
-module cpu
+module utils
 
-fn bool_byte(b bool) byte {
+pub fn bool_byte(b bool) byte {
 	if b {
 		return 1
 	} else {
@@ -8,15 +8,15 @@ fn bool_byte(b bool) byte {
 	}
 }
 
-fn create_address(a, b byte) u16 {
+pub fn create_address(a, b byte) u16 {
 	return (a << 8) | b
 }
 
-fn break_address(addr u16) (byte, byte) {
+pub fn break_address(addr u16) (byte, byte) {
 	return byte((addr >> 8) & 0xff), byte(addr & 0xff)
 }
 
-fn parity(x byte) bool {
+pub fn parity(x byte) bool {
 	// 0
 	mut temp := x
 	mut p := (temp & 1)

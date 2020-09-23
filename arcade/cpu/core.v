@@ -1,6 +1,7 @@
 module cpu
 
 import log
+import utils
 
 pub const (
 	max_memory = 0xffff
@@ -72,7 +73,7 @@ fn (mut state State) set_flags(x byte) {
 	state.flags.z = (x == 0)
 	// Set Sign (s) flag if MSB is set
 	state.flags.s = ((x & 0x80) != 0)
-	state.flags.p = parity(x)
+	state.flags.p = utils.parity(x)
 }
 
 fn (mut state State) execute_addition(x1, x2 u16) byte {
@@ -105,7 +106,7 @@ fn (mut state State) dcr(x1 byte) byte {
 }
 
 fn (mut state State) adc(x1, x2 byte) {
-	new_x2 := u16(x2) + u16(bool_byte(state.flags.cy))
+	new_x2 := u16(x2) + u16(utils.bool_byte(state.flags.cy))
 	// TODO: Identify if there is an error when calculating auxiliary carry
 	// for ADC. What should it be measuring, the result of adding all 3 or
 	// the result of adding the original 2?
@@ -113,7 +114,7 @@ fn (mut state State) adc(x1, x2 byte) {
 }
 
 fn (mut state State) sbb(x1, x2 byte) {
-	new_x2 := u16(-x2) - u16(bool_byte(state.flags.cy))
+	new_x2 := u16(-x2) - u16(utils.bool_byte(state.flags.cy))
 	// TODO: Same as ADC, determine if there is an issue with AC flag.
 	state.execute_addition_and_store(u16(x1), new_x2)
 }
@@ -153,7 +154,7 @@ fn (mut state State) pop() (byte, byte) {
 }
 
 fn (mut state State) call(ret_addr, jmp_addr u16) {
-	left, right := break_address(ret_addr)
+	left, right := utils.break_address(ret_addr)
 	state.push(left, right)
 	// Jump after storing return address on stack
 	state.pc = jmp_addr
@@ -161,15 +162,15 @@ fn (mut state State) call(ret_addr, jmp_addr u16) {
 
 fn (mut state State) ret() {
 	right, left := state.pop()
-	state.pc = create_address(left, right)
+	state.pc = utils.create_address(left, right)
 }
 
 fn (mut state State) dad(a, b byte) {
-	hl := u32(create_address(state.h, state.l))
-	ab := u32(create_address(a, b))
+	hl := u32(utils.create_address(state.h, state.l))
+	ab := u32(utils.create_address(a, b))
 	answer := hl + ab
 	state.flags.cy = (answer > 0xffff)
-	h, l := break_address(u16(answer & 0xffff))
+	h, l := utils.break_address(u16(answer & 0xffff))
 	state.h = h
 	state.l = l
 }
@@ -196,13 +197,13 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x02 {
 			logger.debug('STAX   B')
-			state.mem[create_address(state.b, state.c)] = state.a
+			state.mem[utils.create_address(state.b, state.c)] = state.a
 		}
 		0x03 {
 			logger.debug('INX    B')
-			mut bc := create_address(state.b, state.c)
+			mut bc := utils.create_address(state.b, state.c)
 			bc++
-			state.b, state.c = break_address(bc)
+			state.b, state.c = utils.break_address(bc)
 		}
 		0x04 {
 			logger.debug('INR    B')
@@ -235,13 +236,13 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x0a {
 			logger.debug('LDAX   B')
-			state.a = state.mem[create_address(state.b, state.c)]
+			state.a = state.mem[utils.create_address(state.b, state.c)]
 		}
 		0x0b {
 			logger.debug('DCX    B')
-			mut bc := create_address(state.b, state.c)
+			mut bc := utils.create_address(state.b, state.c)
 			bc--
-			state.b, state.c = break_address(bc)
+			state.b, state.c = utils.break_address(bc)
 		}
 		0x0c {
 			logger.debug('INR    C')
@@ -276,13 +277,13 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x12 {
 			logger.debug('STAX   D')
-			state.mem[create_address(state.d, state.e)] = state.a
+			state.mem[utils.create_address(state.d, state.e)] = state.a
 		}
 		0x13 {
 			logger.debug('INX    D')
-			mut de := create_address(state.d, state.e)
+			mut de := utils.create_address(state.d, state.e)
 			de++
-			state.d, state.e = break_address(de)
+			state.d, state.e = utils.break_address(de)
 		}
 		0x14 {
 			logger.debug('INR    D')
@@ -300,7 +301,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0x17 {
 			logger.debug('RAL')
 			temp := state.a
-			state.a = (bool_byte(state.flags.cy) | (temp << 1))
+			state.a = (utils.bool_byte(state.flags.cy) | (temp << 1))
 			// We use the carryover flag as the wrapping bit here,
 			// but still set carryover based on whether there would
 			// have been a wrapping bit of 1
@@ -316,13 +317,13 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x1a {
 			logger.debug('LDAX   D')
-			state.a = state.mem[create_address(state.d, state.e)]
+			state.a = state.mem[utils.create_address(state.d, state.e)]
 		}
 		0x1b {
 			logger.debug('DCX    D')
-			mut de := create_address(state.d, state.e)
+			mut de := utils.create_address(state.d, state.e)
 			de--
-			state.d, state.e = break_address(de)
+			state.d, state.e = utils.break_address(de)
 		}
 		0x1c {
 			logger.debug('INR    E')
@@ -340,7 +341,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0x1f {
 			logger.debug('RAR')
 			temp := state.a
-			state.a = (bool_byte(state.flags.cy) << 7) | (temp >> 1)
+			state.a = (utils.bool_byte(state.flags.cy) << 7) | (temp >> 1)
 			// We use the carryover flag as the wrapping bit here,
 			// but still set carryover based on whether there would
 			// have been a wrapping bit of 1
@@ -358,16 +359,16 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x22 {
 			logger.debug('SHLD   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			addr := create_address(state.mem[pc + 2], state.mem[pc + 1])
+			addr := utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			state.mem[addr] = state.l
 			state.mem[addr + 1] = state.h
 			state.pc += 2
 		}
 		0x23 {
 			logger.debug('INX    H')
-			mut hl := create_address(state.h, state.l)
+			mut hl := utils.create_address(state.h, state.l)
 			hl++
-			state.h, state.l = break_address(hl)
+			state.h, state.l = utils.break_address(hl)
 		}
 		0x24 {
 			logger.debug('INR    H')
@@ -410,16 +411,16 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x2a {
 			logger.debug('LHLD   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			addr := create_address(state.mem[pc + 2], state.mem[pc + 1])
+			addr := utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			state.l = state.mem[addr]
 			state.h = state.mem[addr + 1]
 			state.pc += 2
 		}
 		0x2b {
 			logger.debug('DCX    H')
-			mut hl := create_address(state.h, state.l)
+			mut hl := utils.create_address(state.h, state.l)
 			hl--
-			state.h, state.l = break_address(hl)
+			state.h, state.l = utils.break_address(hl)
 		}
 		0x2c {
 			logger.debug('INR    L')
@@ -444,12 +445,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x31 {
 			logger.debug('LXI    SP,#$${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			state.sp = create_address(state.mem[pc + 2], state.mem[pc + 1])
+			state.sp = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			state.pc += 2
 		}
 		0x32 {
 			logger.debug('STA    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			addr := create_address(state.mem[pc + 2], state.mem[pc + 1])
+			addr := utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			state.mem[addr] = state.a
 			state.pc += 2
 		}
@@ -459,17 +460,17 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x34 {
 			logger.debug('INR    M')
-			hl := create_address(state.h, state.l)
+			hl := utils.create_address(state.h, state.l)
 			state.mem[hl] = state.inr(state.mem[hl])
 		}
 		0x35 {
 			logger.debug('DCR    M')
-			hl := create_address(state.h, state.l)
+			hl := utils.create_address(state.h, state.l)
 			state.mem[hl] = state.dcr(state.mem[hl])
 		}
 		0x36 {
 			logger.debug('MVI    M,#$${state.mem[pc+1]:02x}')
-			addr := create_address(state.h, state.l)
+			addr := utils.create_address(state.h, state.l)
 			state.mem[addr] = state.mem[pc + 1]
 			state.pc++
 		}
@@ -483,12 +484,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x39 {
 			logger.debug('DAD    SP')
-			sp1, sp2 := break_address(state.sp)
+			sp1, sp2 := utils.break_address(state.sp)
 			state.dad(sp1, sp2)
 		}
 		0x3a {
 			logger.debug('LDA    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			addr := create_address(state.mem[pc + 2], state.mem[pc + 1])
+			addr := utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			state.a = state.mem[addr]
 			state.pc += 2
 		}
@@ -539,7 +540,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x46 {
 			logger.debug('MOV    B,M')
-			state.b = state.mem[create_address(state.h, state.l)]
+			state.b = state.mem[utils.create_address(state.h, state.l)]
 		}
 		0x47 {
 			logger.debug('MOV    B,A')
@@ -571,7 +572,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x4e {
 			logger.debug('MOV    C,M')
-			state.c = state.mem[create_address(state.h, state.l)]
+			state.c = state.mem[utils.create_address(state.h, state.l)]
 		}
 		0x4f {
 			logger.debug('MOV    C,A')
@@ -603,7 +604,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x56 {
 			logger.debug('MOV    D,M')
-			state.d = state.mem[create_address(state.h, state.l)]
+			state.d = state.mem[utils.create_address(state.h, state.l)]
 		}
 		0x57 {
 			logger.debug('MOV    D,A')
@@ -635,7 +636,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x5e {
 			logger.debug('MOV    E,M')
-			state.e = state.mem[create_address(state.h, state.l)]
+			state.e = state.mem[utils.create_address(state.h, state.l)]
 		}
 		0x5f {
 			logger.debug('MOV    E,A')
@@ -667,7 +668,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x66 {
 			logger.debug('MOV    H,M')
-			state.h = state.mem[create_address(state.h, state.l)]
+			state.h = state.mem[utils.create_address(state.h, state.l)]
 		}
 		0x67 {
 			logger.debug('MOV    H,A')
@@ -699,7 +700,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x6e {
 			logger.debug('MOV    L,M')
-			state.l = state.mem[create_address(state.h, state.l)]
+			state.l = state.mem[utils.create_address(state.h, state.l)]
 		}
 		0x6f {
 			logger.debug('MOV    L,A')
@@ -707,27 +708,27 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x70 {
 			logger.debug('MOV    M,B')
-			state.mem[create_address(state.h, state.l)] = state.b
+			state.mem[utils.create_address(state.h, state.l)] = state.b
 		}
 		0x71 {
 			logger.debug('MOV    M,C')
-			state.mem[create_address(state.h, state.l)] = state.c
+			state.mem[utils.create_address(state.h, state.l)] = state.c
 		}
 		0x72 {
 			logger.debug('MOV    M,D')
-			state.mem[create_address(state.h, state.l)] = state.d
+			state.mem[utils.create_address(state.h, state.l)] = state.d
 		}
 		0x73 {
 			logger.debug('MOV    M.E')
-			state.mem[create_address(state.h, state.l)] = state.e
+			state.mem[utils.create_address(state.h, state.l)] = state.e
 		}
 		0x74 {
 			logger.debug('MOV    M,H')
-			state.mem[create_address(state.h, state.l)] = state.h
+			state.mem[utils.create_address(state.h, state.l)] = state.h
 		}
 		0x75 {
 			logger.debug('MOV    M,L')
-			state.mem[create_address(state.h, state.l)] = state.l
+			state.mem[utils.create_address(state.h, state.l)] = state.l
 		}
 		0x76 {
 			logger.debug('HLT')
@@ -735,7 +736,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x77 {
 			logger.debug('MOV    M,A')
-			addr := create_address(state.h, state.l)
+			addr := utils.create_address(state.h, state.l)
 			state.mem[addr] = state.a
 		}
 		0x78 {
@@ -764,7 +765,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x7e {
 			logger.debug('MOV    A,M')
-			state.a = state.mem[create_address(state.h, state.l)]
+			state.a = state.mem[utils.create_address(state.h, state.l)]
 		}
 		0x7f {
 			logger.debug('MOV    A,A')
@@ -796,7 +797,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x86 {
 			logger.debug('ADD    M')
-			offset := create_address(state.h, state.l)
+			offset := utils.create_address(state.h, state.l)
 			state.execute_addition_and_store(state.a, state.mem[offset])
 		}
 		0x87 {
@@ -829,7 +830,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x8e {
 			logger.debug('ADC    M')
-			state.adc(state.a, state.mem[create_address(state.h, state.l)])
+			state.adc(state.a, state.mem[utils.create_address(state.h, state.l)])
 		}
 		0x8f {
 			logger.debug('ADC    A')
@@ -861,7 +862,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x96 {
 			logger.debug('SUB    M')
-			state.execute_addition_and_store(state.a, -(state.mem[create_address(state.h,
+			state.execute_addition_and_store(state.a, -(state.mem[utils.create_address(state.h,
 				state.l)]))
 		}
 		0x97 {
@@ -894,7 +895,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0x9e {
 			logger.debug('SBB    M')
-			state.sbb(state.a, state.mem[create_address(state.h, state.l)])
+			state.sbb(state.a, state.mem[utils.create_address(state.h, state.l)])
 		}
 		0x9f {
 			logger.debug('SBB    A')
@@ -926,7 +927,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xa6 {
 			logger.debug('ANA    M')
-			state.and(state.a, state.mem[create_address(state.h, state.l)])
+			state.and(state.a, state.mem[utils.create_address(state.h, state.l)])
 		}
 		0xa7 {
 			logger.debug('ANA    A')
@@ -958,7 +959,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xae {
 			logger.debug('XRA    M')
-			state.xra(state.a, state.mem[create_address(state.h, state.l)])
+			state.xra(state.a, state.mem[utils.create_address(state.h, state.l)])
 		}
 		0xaf {
 			logger.debug('XRA    A')
@@ -990,7 +991,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xb6 {
 			logger.debug('ORA    M')
-			state.ora(state.a, state.mem[create_address(state.h, state.l)])
+			state.ora(state.a, state.mem[utils.create_address(state.h, state.l)])
 		}
 		0xb7 {
 			logger.debug('ORA    A')
@@ -1022,7 +1023,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xbe {
 			logger.debug('CMP    M')
-			state.execute_addition(state.a, -(state.mem[create_address(state.h, state.l)]))
+			state.execute_addition(state.a, -(state.mem[utils.create_address(state.h, state.l)]))
 		}
 		0xbf {
 			logger.debug('CMP    A')
@@ -1042,7 +1043,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0xc2 {
 			logger.debug('JNZ    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if !state.flags.z {
-				state.pc = create_address(state.mem[pc + 2], state.mem[pc + 1])
+				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
 				// Skip following address if we did not jump
 				state.pc += 2
@@ -1050,12 +1051,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xc3 {
 			logger.debug('JMP    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			state.pc = create_address(state.mem[pc + 2], state.mem[pc + 1])
+			state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 		}
 		0xc4 {
 			logger.debug('CNZ    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if !state.flags.z {
-				state.call(pc + 2, create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			} else {
 				// Skip following address if we did not jump
 				state.pc += 2
@@ -1087,30 +1088,30 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0xca {
 			logger.debug('JZ     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if state.flags.z {
-				state.pc = create_address(state.mem[pc + 2], state.mem[pc + 1])
+				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
 				state.pc += 2
 			}
 		}
 		0xcb {
 			logger.debug('JMP    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			state.pc = create_address(state.mem[pc + 2], state.mem[pc + 1])
+			state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 		}
 		0xcc {
 			logger.debug('CZ     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if state.flags.z {
-				state.call(pc + 2, create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			} else {
 				state.pc += 2
 			}
 		}
 		0xcd {
 			logger.debug('CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			state.call(pc + 2, create_address(state.mem[pc + 2], state.mem[pc + 1]))
+			state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 		}
 		0xce {
 			logger.debug('ACI    #$${state.mem[pc+1]:02x}')
-			state.execute_addition_and_store(state.a, u16(state.mem[pc + 1]) + u16(bool_byte(state.flags.cy)))
+			state.execute_addition_and_store(state.a, u16(state.mem[pc + 1]) + u16(utils.bool_byte(state.flags.cy)))
 			state.pc++
 		}
 		0xcf {
@@ -1130,7 +1131,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0xd2 {
 			logger.debug('JNC    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if !state.flags.cy {
-				state.pc = create_address(state.mem[pc + 2], state.mem[pc + 1])
+				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
 				state.pc += 2
 			}
@@ -1143,7 +1144,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0xd4 {
 			logger.debug('CNC    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if !state.flags.cy {
-				state.call(pc + 2, create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			} else {
 				state.pc += 2
 			}
@@ -1174,7 +1175,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0xda {
 			logger.debug('JC     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if state.flags.cy {
-				state.pc = create_address(state.mem[pc + 2], state.mem[pc + 1])
+				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
 				state.pc += 2
 			}
@@ -1187,18 +1188,18 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0xdc {
 			logger.debug('CC     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if state.flags.cy {
-				state.call(pc + 2, create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			} else {
 				state.pc += 2
 			}
 		}
 		0xdd {
 			logger.debug('CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			state.call(pc + 2, create_address(state.mem[pc + 2], state.mem[pc + 1]))
+			state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 		}
 		0xde {
 			logger.debug('SBI    #$${state.mem[pc+1]:02x}')
-			state.execute_addition_and_store(state.a, -(u16(state.mem[pc + 1])) - u16(bool_byte(state.flags.cy)))
+			state.execute_addition_and_store(state.a, -(u16(state.mem[pc + 1])) - u16(utils.bool_byte(state.flags.cy)))
 			state.pc++
 		}
 		0xdf {
@@ -1218,7 +1219,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0xe2 {
 			logger.debug('JPO    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if !state.flags.p {
-				state.pc = create_address(state.mem[pc + 2], state.mem[pc + 1])
+				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
 				state.pc += 2
 			}
@@ -1232,7 +1233,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0xe4 {
 			logger.debug('CPO    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if !state.flags.p {
-				state.call(pc + 2, create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			} else {
 				state.pc += 2
 			}
@@ -1258,12 +1259,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xe9 {
 			logger.debug('PCHL')
-			state.pc = create_address(state.h, state.l)
+			state.pc = utils.create_address(state.h, state.l)
 		}
 		0xea {
 			logger.debug('JPE    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if state.flags.p {
-				state.pc = create_address(state.mem[pc + 2], state.mem[pc + 1])
+				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
 				state.pc += 2
 			}
@@ -1277,14 +1278,14 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0xec {
 			logger.debug('CPE     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if state.flags.p {
-				state.call(pc + 2, create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			} else {
 				state.pc += 2
 			}
 		}
 		0xed {
 			logger.debug('CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			state.call(pc + 2, create_address(state.mem[pc + 2], state.mem[pc + 1]))
+			state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 		}
 		0xee {
 			logger.debug('XRI    #$${state.mem[pc+1]:02x}')
@@ -1315,7 +1316,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 			logger.debug('JP     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			// TODO: Am I sure I have the definition of "P" right?
 			if !state.flags.s {
-				state.pc = create_address(state.mem[pc + 2], state.mem[pc + 1])
+				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
 				state.pc += 2
 			}
@@ -1327,17 +1328,17 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0xf4 {
 			logger.debug('CP     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if !state.flags.s {
-				state.call(pc + 2, create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			} else {
 				state.pc += 2
 			}
 		}
 		0xf5 {
 			logger.debug('PUSH   PSW')
-			psw := (bool_byte(state.flags.z) |
-				(bool_byte(state.flags.s) << 1) | (bool_byte(state.flags.p) << 2) |
-				(bool_byte(state.flags.cy) << 3) |
-				(bool_byte(state.flags.ac) << 4))
+			psw := (utils.bool_byte(state.flags.z) |
+				(utils.bool_byte(state.flags.s) << 1) | (utils.bool_byte(state.flags.p) << 2) |
+				(utils.bool_byte(state.flags.cy) << 3) |
+				(utils.bool_byte(state.flags.ac) << 4))
 			state.push(state.a, psw)
 		}
 		0xf6 {
@@ -1357,12 +1358,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xf9 {
 			logger.debug('SPHL')
-			state.sp = create_address(state.h, state.l)
+			state.sp = utils.create_address(state.h, state.l)
 		}
 		0xfa {
 			logger.debug('JM     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if state.flags.s {
-				state.pc = create_address(state.mem[pc + 2], state.mem[pc + 1])
+				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
 				state.pc += 2
 			}
@@ -1374,14 +1375,14 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0xfc {
 			logger.debug('CM     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if state.flags.s {
-				state.call(pc + 2, create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			} else {
 				state.pc += 2
 			}
 		}
 		0xfd {
 			logger.debug('CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			state.call(pc + 2, create_address(state.mem[pc + 2], state.mem[pc + 1]))
+			state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 		}
 		0xfe {
 			logger.debug('CPI    #$${state.mem[pc+1]:02x}')
