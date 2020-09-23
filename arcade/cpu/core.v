@@ -46,10 +46,10 @@ mut:
 	flags             Flags
 	interrupt_enabled bool
 	// Machine
-	machine           Machine
+	machine           &Machine
 }
 
-pub fn new(program &[]byte, start_addr u16, machine Machine) State {
+pub fn new(program &[]byte, start_addr u16, machine &Machine) State {
 	mut state := State{
 		machine: machine
 		mem: []byte{len: max_memory, init: 0}

@@ -1,8 +1,7 @@
 import flag
 import log
 import os
-import cpu
-import hardware
+import machine
 
 fn main() {
 	mut fp := flag.new_flag_parser(os.args)
@@ -39,12 +38,13 @@ fn main() {
 			return
 		}
 	}
-	start_addr := fp.int('addr', 0, 0, 'Start address of the loaded 8080 program in memory; must be >= 0 and < 65535')
-	if start_addr < 0 || start_addr > cpu.max_memory - 1 {
-		eprintln('Invalid start address: $start_addr')
-		println(fp.usage())
-		return
-	}
+	// TODO: Keep?
+	// start_addr := fp.int('addr', 0, 0, 'Start address of the loaded 8080 program in memory; must be >= 0 and < 65535')
+	// if start_addr < 0 || start_addr > cpu.max_memory - 1 {
+	// eprintln('Invalid start address: $start_addr')
+	// println(fp.usage())
+	// return
+	// }
 	additional_args := fp.finalize() or {
 		eprintln(err)
 		println(fp.usage())
@@ -60,12 +60,8 @@ fn main() {
 	}
 	mut logger := log.Log{}
 	logger.set_level(log_level_parsed)
-	// TODO: Temporary
-	mut state := cpu.new(source_bytes, u16(start_addr), hardware.State{})
-	for {
-		state.emulate(logger) or {
-			logger.error(err)
-			break
-		}
+	mut machine := machine.new(source_bytes)
+	machine.emulate(logger) or {
+		logger.error(err)
 	}
 }

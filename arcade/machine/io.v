@@ -1,8 +1,8 @@
-module hardware
+module machine
 
 import utils
 
-pub struct State {
+struct IOState {
 mut:
 	// Special 16 bit shift register
 	shift   u16
@@ -11,7 +11,7 @@ mut:
 	input_2 byte
 }
 
-fn (state State) op_in(port byte) ?byte {
+fn (state IOState) op_in(port byte) ?byte {
 	match port {
 		1 { return state.input_1 }
 		2 { return state.input_2 }
@@ -20,7 +20,7 @@ fn (state State) op_in(port byte) ?byte {
 	}
 }
 
-fn (mut state State) op_out(port byte) ? {
+fn (mut state IOState) op_out(port byte) ? {
 	match port {
 		2 {
 			state.offset = port & 0x7
@@ -57,7 +57,7 @@ pub enum Input {
 	player2_right
 }
 
-fn (mut state State) input_down(i Input) {
+fn (mut state IOState) input_down(i Input) {
 	match i {
 		.coin {
 			// bit 0, is 0 when active
@@ -93,7 +93,7 @@ fn (mut state State) input_down(i Input) {
 	}
 }
 
-fn (mut state State) input_up(i Input) {
+fn (mut state IOState) input_up(i Input) {
 	match i {
 		.coin {
 			// bit 0, is 1 when inactive
