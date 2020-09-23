@@ -2,6 +2,7 @@ import flag
 import log
 import os
 import cpu
+import hardware
 
 fn main() {
 	mut fp := flag.new_flag_parser(os.args)
@@ -59,7 +60,8 @@ fn main() {
 	}
 	mut logger := log.Log{}
 	logger.set_level(log_level_parsed)
-	mut state := cpu.new(source_bytes, u16(start_addr))
+	// TODO: Temporary
+	mut state := cpu.new(source_bytes, u16(start_addr), hardware.State{})
 	for {
 		state.emulate(logger) or {
 			logger.error(err)

@@ -21,6 +21,11 @@ mut:
 	ac bool
 }
 
+pub interface Machine {
+	op_in(port byte) ?byte
+	op_out(port byte) ?
+}
+
 pub struct State {
 mut:
 	// Registers
@@ -40,10 +45,13 @@ mut:
 	// Flags for Conditions
 	flags             Flags
 	interrupt_enabled bool
+	// Machine
+	machine           Machine
 }
 
-pub fn new(program &[]byte, start_addr u16) State {
+pub fn new(program &[]byte, start_addr u16, machine Machine) State {
 	mut state := State{
+		machine: machine
 		mem: []byte{len: max_memory, init: 0}
 	}
 	// Copy program to start_addr
@@ -1023,7 +1031,8 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xbe {
 			logger.debug('CMP    M')
-			state.execute_addition(state.a, -(state.mem[utils.create_address(state.h, state.l)]))
+			state.execute_addition(state.a, -(state.mem[utils.create_address(state.h,
+				state.l)]))
 		}
 		0xbf {
 			logger.debug('CMP    A')
@@ -1138,7 +1147,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xd3 {
 			logger.debug('OUT    #$${state.mem[pc+1]:02x}')
-			// TODO: Implement "special"
+			state.machine.op_out(state.mem[pc + 1])?
 			state.pc++
 		}
 		0xd4 {
@@ -1182,8 +1191,8 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xdb {
 			logger.debug('IN     #$${state.mem[pc+1]:02x}')
-			// num_bytes = 2
-			return error('unimplemented')
+			state.a = state.machine.op_in(state.mem[pc + 1])?
+			state.pc++
 		}
 		0xdc {
 			logger.debug('CC     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
@@ -1336,7 +1345,8 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		0xf5 {
 			logger.debug('PUSH   PSW')
 			psw := (utils.bool_byte(state.flags.z) |
-				(utils.bool_byte(state.flags.s) << 1) | (utils.bool_byte(state.flags.p) << 2) |
+				(utils.bool_byte(state.flags.s) << 1) |
+				(utils.bool_byte(state.flags.p) << 2) |
 				(utils.bool_byte(state.flags.cy) << 3) |
 				(utils.bool_byte(state.flags.ac) << 4))
 			state.push(state.a, psw)
