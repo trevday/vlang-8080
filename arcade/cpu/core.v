@@ -62,6 +62,17 @@ pub fn new(program &[]byte, start_addr u16, machine &Machine) State {
 	return state
 }
 
+pub fn (mut state State) interrupt(rst byte) ? {
+	if state.interrupt_enabled {
+		if rst > 7 {
+			return error('invalid interrupt rst')
+		}
+		state.interrupt_enabled = false
+		state.call(state.pc, rst * 8)
+	}
+	return none
+}
+
 fn (state &State) str() string {
 	return 'Registers:\n' +
 		'a: ${state.a:02x}, b: ${state.b:02x}, c: ${state.c:02x}, d: ${state.d:02x}, ' +
@@ -1125,7 +1136,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xcf {
 			logger.debug('RST    1')
-			state.call(state.pc, 1)
+			state.call(state.pc, 0x0008)
 		}
 		0xd0 {
 			logger.debug('RNC')
@@ -1169,7 +1180,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xd7 {
 			logger.debug('RST    2')
-			state.call(state.pc, 2)
+			state.call(state.pc, 0x0010)
 		}
 		0xd8 {
 			logger.debug('RC')
@@ -1213,7 +1224,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xdf {
 			logger.debug('RST    3')
-			state.call(state.pc, 3)
+			state.call(state.pc, 0x0018)
 		}
 		0xe0 {
 			logger.debug('RPO')
@@ -1258,7 +1269,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xe7 {
 			logger.debug('RST    4')
-			state.call(state.pc, 4)
+			state.call(state.pc, 0x0020)
 		}
 		0xe8 {
 			logger.debug('RPE')
@@ -1303,7 +1314,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xef {
 			logger.debug('RST    5')
-			state.call(state.pc, 5)
+			state.call(state.pc, 0x0028)
 		}
 		0xf0 {
 			logger.debug('RP')
@@ -1332,7 +1343,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xf3 {
 			logger.debug('DI')
-			return error('unimplemented')
+			state.interrupt_enabled = false
 		}
 		0xf4 {
 			logger.debug('CP     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
@@ -1358,7 +1369,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xf7 {
 			logger.debug('RST    6')
-			state.call(state.pc, 6)
+			state.call(state.pc, 0x0030)
 		}
 		0xf8 {
 			logger.debug('RM')
@@ -1405,7 +1416,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ? {
 		}
 		0xff {
 			logger.debug('RST    7')
-			state.call(state.pc, 7)
+			state.call(state.pc, 0x0038)
 		}
 		else {
 			return error('unknown opcode: ${state.mem[pc]}')
