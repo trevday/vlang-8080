@@ -73,6 +73,10 @@ pub fn (mut state State) interrupt(rst byte) ? {
 	return none
 }
 
+pub fn (state &State) get_mem() &[]byte {
+	return &state.mem
+}
+
 fn (state &State) str() string {
 	return 'Registers:\n' +
 		'a: ${state.a:02x}, b: ${state.b:02x}, c: ${state.c:02x}, d: ${state.d:02x}, ' +

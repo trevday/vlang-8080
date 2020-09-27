@@ -6,17 +6,20 @@ import time
 
 pub struct Machine {
 mut:
-	cpu cpu.State
-	io  IOState
+	cpu  cpu.State
+	io   IOState
+	view View
 }
 
 pub fn new(program &[]byte) Machine {
 	mut io := IOState{}
 	mut cpu := cpu.new(program, 0x0000, io)
-	return Machine{
+	mut m := Machine{
 		cpu: cpu
 		io: io
 	}
+	m.view = new_view(mut m)
+	return m
 }
 
 // TODO (vcomp)
@@ -32,6 +35,11 @@ const (
 )
 
 pub fn (mut m Machine) emulate(mut logger log.Log) ? {
+	go m.run(logger)
+	m.view.context.run()
+}
+
+pub fn (mut m Machine) run(mut logger log.Log) ? {
 	mut lag_cycles := i64(0)
 	mut timestamp := to_micro(time.now())
 	mut next_interrupt_time := timestamp + interrupt_micro
