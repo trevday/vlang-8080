@@ -8,7 +8,7 @@ import sokol.sgl
 const (
 	view_width_pixels  = 224
 	view_height_pixels = 256
-	render_channels    = 4
+	image_channels     = 4
 	framebuffer_addr   = 0x2400
 )
 
@@ -20,7 +20,7 @@ mut:
 
 fn new_view(mut m Machine) View {
 	mut v := View{
-		framebuffer: []byte{len: view_width_pixels * view_height_pixels * render_channels, init: 0}
+		framebuffer: []byte{len: view_width_pixels * view_height_pixels * image_channels, init: 0}
 		context: gg.new_context({
 			bg_color: gx.white
 			width: view_width_pixels
@@ -43,7 +43,7 @@ fn frame(mut m Machine) {
 	mut img := gg.Image{
 		width: view_width_pixels
 		height: view_height_pixels
-		nr_channels: render_channels
+		nr_channels: image_channels
 		ok: true
 		data: m.view.framebuffer.data
 	}
@@ -74,25 +74,27 @@ fn frame(mut m Machine) {
 	img.simg.free()
 }
 
+// Convert 1-bit image to 4-byte, and rotate
+// by 90 degrees clockwise
 fn read_framebuffer(mut m Machine) {
 	mem_ref := m.cpu.get_mem()
-	for i in 0 .. view_width_pixels {
-		for j := 0; j < view_height_pixels; j += 8 {
-			pix := (*mem_ref)[framebuffer_addr + ((i * (view_height_pixels / 8)) + j / 8)]
-			mut offset := (255 - j) * (view_width_pixels * render_channels) + (i * render_channels)
-			for p in 0 .. 8 {
-				if 0 != (pix & (1 << p)) {
-					m.view.framebuffer[offset] = 255
-					m.view.framebuffer[offset + 1] = 255
-					m.view.framebuffer[offset + 2] = 255
-					m.view.framebuffer[offset + 3] = 255
-				} else {
-					m.view.framebuffer[offset] = 0
-					m.view.framebuffer[offset + 1] = 0
-					m.view.framebuffer[offset + 2] = 0
-					m.view.framebuffer[offset + 3] = 255
-				}
-				offset -= view_width_pixels
+	for y in 0 .. view_width_pixels {
+		for x in 0 .. view_height_pixels {
+			bit_idx := (y * view_height_pixels) + x
+			mem_idx := bit_idx / 8
+			data := (*mem_ref)[mem_idx + framebuffer_addr]
+			pixel := data & (1 << (bit_idx - (mem_idx * 8)))
+			out_offset := (((view_height_pixels - 1 - x) * view_width_pixels) + y) * image_channels
+			if pixel == 0 {
+				m.view.framebuffer[out_offset] = byte(0)
+				m.view.framebuffer[out_offset + 1] = byte(0)
+				m.view.framebuffer[out_offset + 2] = byte(0)
+				m.view.framebuffer[out_offset + 3] = byte(255)
+			} else {
+				m.view.framebuffer[out_offset] = byte(255)
+				m.view.framebuffer[out_offset + 1] = byte(255)
+				m.view.framebuffer[out_offset + 2] = byte(255)
+				m.view.framebuffer[out_offset + 3] = byte(255)
 			}
 		}
 	}
