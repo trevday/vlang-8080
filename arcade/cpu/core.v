@@ -1277,7 +1277,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 		0xc4 {
 			logger.debug('CNZ    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if !state.flags.z {
-				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
 			} else {
 				// Skip following address if we did not jump
@@ -1332,7 +1332,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 		0xcc {
 			logger.debug('CZ     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if state.flags.z {
-				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
 			} else {
 				state.pc += 2
@@ -1341,7 +1341,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 		}
 		0xcd {
 			logger.debug('CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
+			state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			cycles_used = 17
 		}
 		0xce {
@@ -1387,7 +1387,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 		0xd4 {
 			logger.debug('CNC    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if !state.flags.cy {
-				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
 			} else {
 				// Skip following address if we did not jump
@@ -1443,7 +1443,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 		0xdc {
 			logger.debug('CC     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if state.flags.cy {
-				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
 			} else {
 				state.pc += 2
@@ -1452,7 +1452,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 		}
 		0xdd {
 			logger.debug('CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
+			state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			cycles_used = 17
 		}
 		0xde {
@@ -1499,7 +1499,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 		0xe4 {
 			logger.debug('CPO    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if !state.flags.p {
-				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
 			} else {
 				// Skip following address if we did not jump
@@ -1556,7 +1556,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 		0xec {
 			logger.debug('CPE     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if state.flags.p {
-				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
 			} else {
 				state.pc += 2
@@ -1565,7 +1565,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 		}
 		0xed {
 			logger.debug('CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
+			state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			cycles_used = 17
 		}
 		0xee {
@@ -1617,7 +1617,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 		0xf4 {
 			logger.debug('CP     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if !state.flags.s {
-				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
 			} else {
 				// Skip following address if we did not jump
@@ -1677,7 +1677,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 		0xfc {
 			logger.debug('CM     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
 			if state.flags.s {
-				state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
+				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
 			} else {
 				state.pc += 2
@@ -1686,7 +1686,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 		}
 		0xfd {
 			logger.debug('CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
-			state.call(pc + 2, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
+			state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			cycles_used = 17
 		}
 		0xfe {
