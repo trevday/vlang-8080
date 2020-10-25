@@ -491,6 +491,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			state.mem[addr] = state.l
 			state.mem[addr + 1] = state.h
 			state.pc += 2
+			cycles_used = 16
 		}
 		0x23 {
 			$if debug {
@@ -566,6 +567,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			state.l = state.mem[addr]
 			state.h = state.mem[addr + 1]
 			state.pc += 2
+			cycles_used = 16
 		}
 		0x2b {
 			$if debug {
