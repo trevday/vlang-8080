@@ -41,7 +41,7 @@ pub fn (mut m Machine) emulate(mut logger log.Log) ? {
 	m.view.context.run()
 }
 
-pub fn (mut m Machine) run(mut logger log.Log) ? {
+pub fn (mut m Machine) run(mut logger log.Log) {
 	mut lag_cycles := i64(0)
 	mut timestamp := to_micro(time.now())
 	mut next_interrupt_time := timestamp + interrupt_micro
@@ -53,8 +53,13 @@ pub fn (mut m Machine) run(mut logger log.Log) ? {
 			next_interrupt_instruction ^= 3
 		}
 		for lag_cycles > 0 {
-			// TODO (vcomp)
-			temp := m.cpu.emulate(logger)?
+			// TODO (vcomp): I would prefer not to have to panic
+			// here but I had a lot of difficulty getting errors to
+			// pass between threads via channels, they are not quite
+			// robust enough yet to support that.
+			temp := m.cpu.emulate(logger) or {
+				panic(err)
+			}
 			lag_cycles -= temp
 		}
 		now := to_micro(time.now())
