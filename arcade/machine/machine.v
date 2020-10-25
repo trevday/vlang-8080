@@ -7,12 +7,12 @@ import time
 pub struct Machine {
 mut:
 	cpu  cpu.State
-	io   IOState
+	io   &IOState
 	view View
 }
 
 pub fn new(program &[]byte) Machine {
-	mut io := IOState{}
+	mut io := &IOState{}
 	mut cpu := cpu.new(program, 0x0000, io)
 	mut m := Machine{
 		cpu: cpu
