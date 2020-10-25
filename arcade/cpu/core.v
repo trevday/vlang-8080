@@ -2080,7 +2080,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			state.flags.z = ((psw & 0x01) == 0x01)
 			state.flags.s = ((psw & 0x02) == 0x02)
 			state.flags.p = ((psw & 0x04) == 0x04)
-			state.flags.cy = ((psw & 0x08) == 0x05)
+			state.flags.cy = ((psw & 0x08) == 0x08)
 			state.flags.ac = ((psw & 0x10) == 0x10)
 			state.a = a
 			cycles_used = 10
