@@ -78,11 +78,9 @@ pub fn (state &State) get_mem() &[]byte {
 }
 
 fn (state &State) str() string {
-	return 'Registers:\n' +
-		'a: ${state.a:02x}, b: ${state.b:02x}, c: ${state.c:02x}, d: ${state.d:02x}, ' +
-		'e: ${state.e:02x}, h: ${state.h:02x}, l: ${state.l:02x}' +
-		'\nStack Pointer: ${state.sp:04x}\nProgram Counter: ${state.pc:04x}' +
-		'\nFlags:\nz: $state.flags.z, s: $state.flags.s, p: $state.flags.p, cy: $state.flags.cy, ac: $state.flags.ac'
+	return 'a: 0x${state.a:02x} b: 0x${state.b:02x} c: 0x${state.c:02x} d: 0x${state.d:02x} ' +
+		'e: 0x${state.e:02x} h: 0x${state.h:02x} l: 0x${state.l:02x} ' + 'sp: 0x${state.sp:04x} pc: 0x${state.pc:04x} ' +
+		'z: $state.flags.z s: $state.flags.s p: $state.flags.p cy: $state.flags.cy ac: $state.flags.ac'
 }
 
 enum Instructions {
@@ -207,50 +205,50 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 	mut cycles_used := u32(0)
 	pc := state.pc
 	state.pc++
-	logger.debug('Executing ${state.mem[pc]:02x}')
+	mut cmd_str := ''
 	match state.mem[pc] {
 		0x00 {
-			logger.debug('NOP')
+			cmd_str = 'NOP'
 			// NOP
 			cycles_used = 4
 		}
 		0x01 {
-			logger.debug('LXI    B,#$${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'LXI    B,#$${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			state.b = state.mem[pc + 2]
 			state.c = state.mem[pc + 1]
 			state.pc += 2
 			cycles_used = 10
 		}
 		0x02 {
-			logger.debug('STAX   B')
+			cmd_str = 'STAX   B'
 			state.mem[utils.create_address(state.b, state.c)] = state.a
 			cycles_used = 7
 		}
 		0x03 {
-			logger.debug('INX    B')
+			cmd_str = 'INX    B'
 			mut bc := utils.create_address(state.b, state.c)
 			bc++
 			state.b, state.c = utils.break_address(bc)
 			cycles_used = 5
 		}
 		0x04 {
-			logger.debug('INR    B')
+			cmd_str = 'INR    B'
 			state.b = state.inr(state.b)
 			cycles_used = 5
 		}
 		0x05 {
-			logger.debug('DCR    B')
+			cmd_str = 'DCR    B'
 			state.b = state.dcr(state.b)
 			cycles_used = 5
 		}
 		0x06 {
-			logger.debug('MVI    B,#$${state.mem[pc+1]:02x}')
+			cmd_str = 'MVI    B,#$${state.mem[pc+1]:02x}'
 			state.b = state.mem[pc + 1]
 			state.pc++
 			cycles_used = 7
 		}
 		0x07 {
-			logger.debug('RLC')
+			cmd_str = 'RLC'
 			temp := state.a
 			state.a = ((temp & 128) >> 7) | (temp << 1)
 			// Set carryover if the bit that wraps around
@@ -259,45 +257,45 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 4
 		}
 		0x08 {
-			logger.debug('NOP')
+			cmd_str = 'NOP'
 			// NOP
 			cycles_used = 4
 		}
 		0x09 {
-			logger.debug('DAD    B')
+			cmd_str = 'DAD    B'
 			state.dad(state.b, state.c)
 			cycles_used = 10
 		}
 		0x0a {
-			logger.debug('LDAX   B')
+			cmd_str = 'LDAX   B'
 			state.a = state.mem[utils.create_address(state.b, state.c)]
 			cycles_used = 7
 		}
 		0x0b {
-			logger.debug('DCX    B')
+			cmd_str = 'DCX    B'
 			mut bc := utils.create_address(state.b, state.c)
 			bc--
 			state.b, state.c = utils.break_address(bc)
 			cycles_used = 5
 		}
 		0x0c {
-			logger.debug('INR    C')
+			cmd_str = 'INR    C'
 			state.c = state.inr(state.c)
 			cycles_used = 5
 		}
 		0x0d {
-			logger.debug('DCR    C')
+			cmd_str = 'DCR    C'
 			state.c = state.dcr(state.c)
 			cycles_used = 5
 		}
 		0x0e {
-			logger.debug('MVI    C,#$${state.mem[pc+1]:02x}')
+			cmd_str = 'MVI    C,#$${state.mem[pc+1]:02x}'
 			state.c = state.mem[pc + 1]
 			state.pc++
 			cycles_used = 7
 		}
 		0x0f {
-			logger.debug('RRC')
+			cmd_str = 'RRC'
 			temp := state.a
 			state.a = ((temp & 1) << 7) | (temp >> 1)
 			// Set carryover if the bit that wraps around
@@ -306,47 +304,47 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 4
 		}
 		0x10 {
-			logger.debug('NOP')
+			cmd_str = 'NOP'
 			// NOP
 			cycles_used = 4
 		}
 		0x11 {
-			logger.debug('LXI    D,#$${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'LXI    D,#$${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			state.d = state.mem[pc + 2]
 			state.e = state.mem[pc + 1]
 			state.pc += 2
 			cycles_used = 10
 		}
 		0x12 {
-			logger.debug('STAX   D')
+			cmd_str = 'STAX   D'
 			state.mem[utils.create_address(state.d, state.e)] = state.a
 			cycles_used = 7
 		}
 		0x13 {
-			logger.debug('INX    D')
+			cmd_str = 'INX    D'
 			mut de := utils.create_address(state.d, state.e)
 			de++
 			state.d, state.e = utils.break_address(de)
 			cycles_used = 5
 		}
 		0x14 {
-			logger.debug('INR    D')
+			cmd_str = 'INR    D'
 			state.d = state.inr(state.d)
 			cycles_used = 5
 		}
 		0x15 {
-			logger.debug('DCR    D')
+			cmd_str = 'DCR    D'
 			state.d = state.dcr(state.d)
 			cycles_used = 5
 		}
 		0x16 {
-			logger.debug('MVI    D,#$${state.mem[pc+1]:02x}')
+			cmd_str = 'MVI    D,#$${state.mem[pc+1]:02x}'
 			state.d = state.mem[pc + 1]
 			state.pc++
 			cycles_used = 7
 		}
 		0x17 {
-			logger.debug('RAL')
+			cmd_str = 'RAL'
 			temp := state.a
 			state.a = (utils.bool_byte(state.flags.cy) | (temp << 1))
 			// We use the carryover flag as the wrapping bit here,
@@ -356,45 +354,45 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 4
 		}
 		0x18 {
-			logger.debug('NOP')
+			cmd_str = 'NOP'
 			// NOP
 			cycles_used = 4
 		}
 		0x19 {
-			logger.debug('DAD    D')
+			cmd_str = 'DAD    D'
 			state.dad(state.d, state.e)
 			cycles_used = 10
 		}
 		0x1a {
-			logger.debug('LDAX   D')
+			cmd_str = 'LDAX   D'
 			state.a = state.mem[utils.create_address(state.d, state.e)]
 			cycles_used = 7
 		}
 		0x1b {
-			logger.debug('DCX    D')
+			cmd_str = 'DCX    D'
 			mut de := utils.create_address(state.d, state.e)
 			de--
 			state.d, state.e = utils.break_address(de)
 			cycles_used = 5
 		}
 		0x1c {
-			logger.debug('INR    E')
+			cmd_str = 'INR    E'
 			state.e = state.inr(state.e)
 			cycles_used = 5
 		}
 		0x1d {
-			logger.debug('DCR    E')
+			cmd_str = 'DCR    E'
 			state.e = state.dcr(state.e)
 			cycles_used = 5
 		}
 		0x1e {
-			logger.debug('MVI    E,#$${state.mem[pc+1]:02x}')
+			cmd_str = 'MVI    E,#$${state.mem[pc+1]:02x}'
 			state.e = state.mem[pc + 1]
 			state.pc++
 			cycles_used = 7
 		}
 		0x1f {
-			logger.debug('RAR')
+			cmd_str = 'RAR'
 			temp := state.a
 			state.a = (utils.bool_byte(state.flags.cy) << 7) | (temp >> 1)
 			// We use the carryover flag as the wrapping bit here,
@@ -404,49 +402,49 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 4
 		}
 		0x20 {
-			logger.debug('NOP')
+			cmd_str = 'NOP'
 			// NOP
 			cycles_used = 4
 		}
 		0x21 {
-			logger.debug('LXI    H,#$${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'LXI    H,#$${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			state.h = state.mem[pc + 2]
 			state.l = state.mem[pc + 1]
 			state.pc += 2
 			cycles_used = 10
 		}
 		0x22 {
-			logger.debug('SHLD   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'SHLD   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			addr := utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			state.mem[addr] = state.l
 			state.mem[addr + 1] = state.h
 			state.pc += 2
 		}
 		0x23 {
-			logger.debug('INX    H')
+			cmd_str = 'INX    H'
 			mut hl := utils.create_address(state.h, state.l)
 			hl++
 			state.h, state.l = utils.break_address(hl)
 			cycles_used = 5
 		}
 		0x24 {
-			logger.debug('INR    H')
+			cmd_str = 'INR    H'
 			state.h = state.inr(state.h)
 			cycles_used = 5
 		}
 		0x25 {
-			logger.debug('DCR    H')
+			cmd_str = 'DCR    H'
 			state.h = state.dcr(state.h)
 			cycles_used = 5
 		}
 		0x26 {
-			logger.debug('MVI    H,#$${state.mem[pc+1]:02x}')
+			cmd_str = 'MVI    H,#$${state.mem[pc+1]:02x}'
 			state.h = state.mem[pc + 1]
 			state.pc++
 			cycles_used = 7
 		}
 		0x27 {
-			logger.debug('DAA')
+			cmd_str = 'DAA'
 			orig_a, orig_cy := state.a, state.flags.cy
 			if (orig_a & 0xf) > 9 || state.flags.ac {
 				res := u16(state.a) + u16(6)
@@ -465,787 +463,787 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 4
 		}
 		0x28 {
-			logger.debug('NOP')
+			cmd_str = 'NOP'
 			// NOP
 			cycles_used = 4
 		}
 		0x29 {
-			logger.debug('DAD    H')
+			cmd_str = 'DAD    H'
 			state.dad(state.h, state.l)
 			cycles_used = 10
 		}
 		0x2a {
-			logger.debug('LHLD   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'LHLD   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			addr := utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			state.l = state.mem[addr]
 			state.h = state.mem[addr + 1]
 			state.pc += 2
 		}
 		0x2b {
-			logger.debug('DCX    H')
+			cmd_str = 'DCX    H'
 			mut hl := utils.create_address(state.h, state.l)
 			hl--
 			state.h, state.l = utils.break_address(hl)
 			cycles_used = 5
 		}
 		0x2c {
-			logger.debug('INR    L')
+			cmd_str = 'INR    L'
 			state.l = state.inr(state.l)
 			cycles_used = 5
 		}
 		0x2d {
-			logger.debug('DCR    L')
+			cmd_str = 'DCR    L'
 			state.l = state.dcr(state.l)
 			cycles_used = 5
 		}
 		0x2e {
-			logger.debug('MVI    L,#$${state.mem[pc+1]:02x}')
+			cmd_str = 'MVI    L,#$${state.mem[pc+1]:02x}'
 			state.l = state.mem[pc + 1]
 			state.pc++
 			cycles_used = 7
 		}
 		0x2f {
-			logger.debug('CMA')
+			cmd_str = 'CMA'
 			state.a = ~state.a
 			cycles_used = 4
 		}
 		0x30 {
-			logger.debug('NOP')
+			cmd_str = 'NOP'
 			// NOP
 			cycles_used = 4
 		}
 		0x31 {
-			logger.debug('LXI    SP,#$${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'LXI    SP,#$${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			state.sp = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			state.pc += 2
 			cycles_used = 10
 		}
 		0x32 {
-			logger.debug('STA    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'STA    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			addr := utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			state.mem[addr] = state.a
 			state.pc += 2
 			cycles_used = 13
 		}
 		0x33 {
-			logger.debug('INX    SP')
+			cmd_str = 'INX    SP'
 			state.sp++
 			cycles_used = 5
 		}
 		0x34 {
-			logger.debug('INR    M')
+			cmd_str = 'INR    M'
 			hl := utils.create_address(state.h, state.l)
 			state.mem[hl] = state.inr(state.mem[hl])
 			cycles_used = 10
 		}
 		0x35 {
-			logger.debug('DCR    M')
+			cmd_str = 'DCR    M'
 			hl := utils.create_address(state.h, state.l)
 			state.mem[hl] = state.dcr(state.mem[hl])
 			cycles_used = 10
 		}
 		0x36 {
-			logger.debug('MVI    M,#$${state.mem[pc+1]:02x}')
+			cmd_str = 'MVI    M,#$${state.mem[pc+1]:02x}'
 			addr := utils.create_address(state.h, state.l)
 			state.mem[addr] = state.mem[pc + 1]
 			state.pc++
 			cycles_used = 10
 		}
 		0x37 {
-			logger.debug('STC')
+			cmd_str = 'STC'
 			state.flags.cy = true
 			cycles_used = 4
 		}
 		0x38 {
-			logger.debug('NOP')
+			cmd_str = 'NOP'
 			// NOP
 			cycles_used = 4
 		}
 		0x39 {
-			logger.debug('DAD    SP')
+			cmd_str = 'DAD    SP'
 			sp1, sp2 := utils.break_address(state.sp)
 			state.dad(sp1, sp2)
 			cycles_used = 10
 		}
 		0x3a {
-			logger.debug('LDA    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'LDA    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			addr := utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			state.a = state.mem[addr]
 			state.pc += 2
 			cycles_used = 13
 		}
 		0x3b {
-			logger.debug('DCX    SP')
+			cmd_str = 'DCX    SP'
 			state.sp--
 			cycles_used = 5
 		}
 		0x3c {
-			logger.debug('INR    A')
+			cmd_str = 'INR    A'
 			state.a = state.inr(state.a)
 			cycles_used = 5
 		}
 		0x3d {
-			logger.debug('DCR    A')
+			cmd_str = 'DCR    A'
 			state.a = state.dcr(state.a)
 			cycles_used = 5
 		}
 		0x3e {
-			logger.debug('MVI    A,#$${state.mem[pc+1]:02x}')
+			cmd_str = 'MVI    A,#$${state.mem[pc+1]:02x}'
 			state.a = state.mem[pc + 1]
 			state.pc++
 			cycles_used = 7
 		}
 		0x3f {
-			logger.debug('CMC')
+			cmd_str = 'CMC'
 			state.flags.cy = !state.flags.cy
 			cycles_used = 4
 		}
 		0x40 {
-			logger.debug('MOV    B,B')
+			cmd_str = 'MOV    B,B'
 			state.b = state.b
 			cycles_used = 5
 		}
 		0x41 {
-			logger.debug('MOV    B,C')
+			cmd_str = 'MOV    B,C'
 			state.b = state.c
 			cycles_used = 5
 		}
 		0x42 {
-			logger.debug('MOV    B,D')
+			cmd_str = 'MOV    B,D'
 			state.b = state.d
 			cycles_used = 5
 		}
 		0x43 {
-			logger.debug('MOV    B,E')
+			cmd_str = 'MOV    B,E'
 			state.b = state.e
 			cycles_used = 5
 		}
 		0x44 {
-			logger.debug('MOV    B,H')
+			cmd_str = 'MOV    B,H'
 			state.b = state.h
 			cycles_used = 5
 		}
 		0x45 {
-			logger.debug('MOV    B,L')
+			cmd_str = 'MOV    B,L'
 			state.b = state.l
 			cycles_used = 5
 		}
 		0x46 {
-			logger.debug('MOV    B,M')
+			cmd_str = 'MOV    B,M'
 			state.b = state.mem[utils.create_address(state.h, state.l)]
 			cycles_used = 7
 		}
 		0x47 {
-			logger.debug('MOV    B,A')
+			cmd_str = 'MOV    B,A'
 			state.b = state.a
 			cycles_used = 5
 		}
 		0x48 {
-			logger.debug('MOV    C,B')
+			cmd_str = 'MOV    C,B'
 			state.c = state.b
 			cycles_used = 5
 		}
 		0x49 {
-			logger.debug('MOV    C,C')
+			cmd_str = 'MOV    C,C'
 			state.c = state.c
 			cycles_used = 5
 		}
 		0x4a {
-			logger.debug('MOV    C,D')
+			cmd_str = 'MOV    C,D'
 			state.c = state.d
 			cycles_used = 5
 		}
 		0x4b {
-			logger.debug('MOV    C,E')
+			cmd_str = 'MOV    C,E'
 			state.c = state.e
 			cycles_used = 5
 		}
 		0x4c {
-			logger.debug('MOV    C,H')
+			cmd_str = 'MOV    C,H'
 			state.c = state.h
 			cycles_used = 5
 		}
 		0x4d {
-			logger.debug('MOV    C,L')
+			cmd_str = 'MOV    C,L'
 			state.c = state.l
 			cycles_used = 5
 		}
 		0x4e {
-			logger.debug('MOV    C,M')
+			cmd_str = 'MOV    C,M'
 			state.c = state.mem[utils.create_address(state.h, state.l)]
 			cycles_used = 7
 		}
 		0x4f {
-			logger.debug('MOV    C,A')
+			cmd_str = 'MOV    C,A'
 			state.c = state.a
 			cycles_used = 5
 		}
 		0x50 {
-			logger.debug('MOV    D,B')
+			cmd_str = 'MOV    D,B'
 			state.d = state.a
 			cycles_used = 5
 		}
 		0x51 {
-			logger.debug('MOV    D,C')
+			cmd_str = 'MOV    D,C'
 			state.d = state.c
 			cycles_used = 5
 		}
 		0x52 {
-			logger.debug('MOV    D,D')
+			cmd_str = 'MOV    D,D'
 			state.d = state.d
 			cycles_used = 5
 		}
 		0x53 {
-			logger.debug('MOV    D.E')
+			cmd_str = 'MOV    D.E'
 			state.d = state.e
 			cycles_used = 5
 		}
 		0x54 {
-			logger.debug('MOV    D,H')
+			cmd_str = 'MOV    D,H'
 			state.d = state.h
 			cycles_used = 5
 		}
 		0x55 {
-			logger.debug('MOV    D,L')
+			cmd_str = 'MOV    D,L'
 			state.d = state.l
 			cycles_used = 5
 		}
 		0x56 {
-			logger.debug('MOV    D,M')
+			cmd_str = 'MOV    D,M'
 			state.d = state.mem[utils.create_address(state.h, state.l)]
 			cycles_used = 7
 		}
 		0x57 {
-			logger.debug('MOV    D,A')
+			cmd_str = 'MOV    D,A'
 			state.d = state.a
 			cycles_used = 5
 		}
 		0x58 {
-			logger.debug('MOV    E,B')
+			cmd_str = 'MOV    E,B'
 			state.e = state.b
 			cycles_used = 5
 		}
 		0x59 {
-			logger.debug('MOV    E,C')
+			cmd_str = 'MOV    E,C'
 			state.e = state.c
 			cycles_used = 5
 		}
 		0x5a {
-			logger.debug('MOV    E,D')
+			cmd_str = 'MOV    E,D'
 			state.e = state.d
 			cycles_used = 5
 		}
 		0x5b {
-			logger.debug('MOV    E,E')
+			cmd_str = 'MOV    E,E'
 			state.e = state.e
 			cycles_used = 5
 		}
 		0x5c {
-			logger.debug('MOV    E,H')
+			cmd_str = 'MOV    E,H'
 			state.e = state.h
 			cycles_used = 5
 		}
 		0x5d {
-			logger.debug('MOV    E,L')
+			cmd_str = 'MOV    E,L'
 			state.e = state.l
 			cycles_used = 5
 		}
 		0x5e {
-			logger.debug('MOV    E,M')
+			cmd_str = 'MOV    E,M'
 			state.e = state.mem[utils.create_address(state.h, state.l)]
 			cycles_used = 7
 		}
 		0x5f {
-			logger.debug('MOV    E,A')
+			cmd_str = 'MOV    E,A'
 			state.e = state.a
 			cycles_used = 5
 		}
 		0x60 {
-			logger.debug('MOV    H,B')
+			cmd_str = 'MOV    H,B'
 			state.h = state.b
 			cycles_used = 5
 		}
 		0x61 {
-			logger.debug('MOV    H,C')
+			cmd_str = 'MOV    H,C'
 			state.h = state.c
 			cycles_used = 5
 		}
 		0x62 {
-			logger.debug('MOV    H,D')
+			cmd_str = 'MOV    H,D'
 			state.h = state.d
 			cycles_used = 5
 		}
 		0x63 {
-			logger.debug('MOV    H.E')
+			cmd_str = 'MOV    H.E'
 			state.h = state.e
 			cycles_used = 5
 		}
 		0x64 {
-			logger.debug('MOV    H,H')
+			cmd_str = 'MOV    H,H'
 			state.h = state.h
 			cycles_used = 5
 		}
 		0x65 {
-			logger.debug('MOV    H,L')
+			cmd_str = 'MOV    H,L'
 			state.h = state.l
 			cycles_used = 5
 		}
 		0x66 {
-			logger.debug('MOV    H,M')
+			cmd_str = 'MOV    H,M'
 			state.h = state.mem[utils.create_address(state.h, state.l)]
 			cycles_used = 7
 		}
 		0x67 {
-			logger.debug('MOV    H,A')
+			cmd_str = 'MOV    H,A'
 			state.h = state.a
 			cycles_used = 5
 		}
 		0x68 {
-			logger.debug('MOV    L,B')
+			cmd_str = 'MOV    L,B'
 			state.l = state.b
 			cycles_used = 5
 		}
 		0x69 {
-			logger.debug('MOV    L,C')
+			cmd_str = 'MOV    L,C'
 			state.l = state.c
 			cycles_used = 5
 		}
 		0x6a {
-			logger.debug('MOV    L,D')
+			cmd_str = 'MOV    L,D'
 			state.l = state.d
 			cycles_used = 5
 		}
 		0x6b {
-			logger.debug('MOV    L,E')
+			cmd_str = 'MOV    L,E'
 			state.l = state.e
 			cycles_used = 5
 		}
 		0x6c {
-			logger.debug('MOV    L,H')
+			cmd_str = 'MOV    L,H'
 			state.l = state.h
 			cycles_used = 5
 		}
 		0x6d {
-			logger.debug('MOV    L,L')
+			cmd_str = 'MOV    L,L'
 			state.l = state.l
 			cycles_used = 5
 		}
 		0x6e {
-			logger.debug('MOV    L,M')
+			cmd_str = 'MOV    L,M'
 			state.l = state.mem[utils.create_address(state.h, state.l)]
 			cycles_used = 7
 		}
 		0x6f {
-			logger.debug('MOV    L,A')
+			cmd_str = 'MOV    L,A'
 			state.l = state.a
 			cycles_used = 5
 		}
 		0x70 {
-			logger.debug('MOV    M,B')
+			cmd_str = 'MOV    M,B'
 			state.mem[utils.create_address(state.h, state.l)] = state.b
 			cycles_used = 7
 		}
 		0x71 {
-			logger.debug('MOV    M,C')
+			cmd_str = 'MOV    M,C'
 			state.mem[utils.create_address(state.h, state.l)] = state.c
 			cycles_used = 7
 		}
 		0x72 {
-			logger.debug('MOV    M,D')
+			cmd_str = 'MOV    M,D'
 			state.mem[utils.create_address(state.h, state.l)] = state.d
 			cycles_used = 7
 		}
 		0x73 {
-			logger.debug('MOV    M.E')
+			cmd_str = 'MOV    M.E'
 			state.mem[utils.create_address(state.h, state.l)] = state.e
 			cycles_used = 7
 		}
 		0x74 {
-			logger.debug('MOV    M,H')
+			cmd_str = 'MOV    M,H'
 			state.mem[utils.create_address(state.h, state.l)] = state.h
 			cycles_used = 7
 		}
 		0x75 {
-			logger.debug('MOV    M,L')
+			cmd_str = 'MOV    M,L'
 			state.mem[utils.create_address(state.h, state.l)] = state.l
 			cycles_used = 7
 		}
 		0x76 {
-			logger.debug('HLT')
+			cmd_str = 'HLT'
 			cycles_used = 7
 			return error('unimplemented')
 		}
 		0x77 {
-			logger.debug('MOV    M,A')
+			cmd_str = 'MOV    M,A'
 			addr := utils.create_address(state.h, state.l)
 			cycles_used = 7
 			state.mem[addr] = state.a
 		}
 		0x78 {
-			logger.debug('MOV    A,B')
+			cmd_str = 'MOV    A,B'
 			state.a = state.b
 			cycles_used = 5
 		}
 		0x79 {
-			logger.debug('MOV    A,C')
+			cmd_str = 'MOV    A,C'
 			state.a = state.c
 			cycles_used = 5
 		}
 		0x7a {
-			logger.debug('MOV    A,D')
+			cmd_str = 'MOV    A,D'
 			state.a = state.d
 			cycles_used = 5
 		}
 		0x7b {
-			logger.debug('MOV    A,E')
+			cmd_str = 'MOV    A,E'
 			state.a = state.e
 			cycles_used = 5
 		}
 		0x7c {
-			logger.debug('MOV    A,H')
+			cmd_str = 'MOV    A,H'
 			state.a = state.h
 			cycles_used = 5
 		}
 		0x7d {
-			logger.debug('MOV    A,L')
+			cmd_str = 'MOV    A,L'
 			state.a = state.l
 			cycles_used = 5
 		}
 		0x7e {
-			logger.debug('MOV    A,M')
+			cmd_str = 'MOV    A,M'
 			state.a = state.mem[utils.create_address(state.h, state.l)]
 			cycles_used = 7
 		}
 		0x7f {
-			logger.debug('MOV    A,A')
+			cmd_str = 'MOV    A,A'
 			state.a = state.a
 			cycles_used = 5
 		}
 		0x80 {
-			logger.debug('ADD    B')
+			cmd_str = 'ADD    B'
 			state.execute_addition_and_store(state.a, state.b)
 			cycles_used = 4
 		}
 		0x81 {
-			logger.debug('ADD    C')
+			cmd_str = 'ADD    C'
 			state.execute_addition_and_store(state.a, state.c)
 			cycles_used = 4
 		}
 		0x82 {
-			logger.debug('ADD    D')
+			cmd_str = 'ADD    D'
 			state.execute_addition_and_store(state.a, state.d)
 			cycles_used = 4
 		}
 		0x83 {
-			logger.debug('ADD    E')
+			cmd_str = 'ADD    E'
 			state.execute_addition_and_store(state.a, state.e)
 			cycles_used = 4
 		}
 		0x84 {
-			logger.debug('ADD    H')
+			cmd_str = 'ADD    H'
 			state.execute_addition_and_store(state.a, state.h)
 			cycles_used = 4
 		}
 		0x85 {
-			logger.debug('ADD    L')
+			cmd_str = 'ADD    L'
 			state.execute_addition_and_store(state.a, state.l)
 			cycles_used = 4
 		}
 		0x86 {
-			logger.debug('ADD    M')
+			cmd_str = 'ADD    M'
 			offset := utils.create_address(state.h, state.l)
 			cycles_used = 7
 			state.execute_addition_and_store(state.a, state.mem[offset])
 		}
 		0x87 {
-			logger.debug('ADD    A')
+			cmd_str = 'ADD    A'
 			state.execute_addition_and_store(state.a, state.a)
 			cycles_used = 4
 		}
 		0x88 {
-			logger.debug('ADC    B')
+			cmd_str = 'ADC    B'
 			state.adc(state.a, state.b)
 			cycles_used = 4
 		}
 		0x89 {
-			logger.debug('ADC    C')
+			cmd_str = 'ADC    C'
 			state.adc(state.a, state.c)
 			cycles_used = 4
 		}
 		0x8a {
-			logger.debug('ADC    D')
+			cmd_str = 'ADC    D'
 			state.adc(state.a, state.d)
 			cycles_used = 4
 		}
 		0x8b {
-			logger.debug('ADC    E')
+			cmd_str = 'ADC    E'
 			state.adc(state.a, state.e)
 			cycles_used = 4
 		}
 		0x8c {
-			logger.debug('ADC    H')
+			cmd_str = 'ADC    H'
 			state.adc(state.a, state.h)
 			cycles_used = 4
 		}
 		0x8d {
-			logger.debug('ADC    L')
+			cmd_str = 'ADC    L'
 			state.adc(state.a, state.l)
 			cycles_used = 4
 		}
 		0x8e {
-			logger.debug('ADC    M')
+			cmd_str = 'ADC    M'
 			state.adc(state.a, state.mem[utils.create_address(state.h, state.l)])
 			cycles_used = 7
 		}
 		0x8f {
-			logger.debug('ADC    A')
+			cmd_str = 'ADC    A'
 			state.adc(state.a, state.a)
 			cycles_used = 4
 		}
 		0x90 {
-			logger.debug('SUB    B')
+			cmd_str = 'SUB    B'
 			state.execute_addition_and_store(state.a, -state.b)
 			cycles_used = 4
 		}
 		0x91 {
-			logger.debug('SUB    C')
+			cmd_str = 'SUB    C'
 			state.execute_addition_and_store(state.a, -state.c)
 			cycles_used = 4
 		}
 		0x92 {
-			logger.debug('SUB    D')
+			cmd_str = 'SUB    D'
 			state.execute_addition_and_store(state.a, -state.d)
 			cycles_used = 4
 		}
 		0x93 {
-			logger.debug('SUB    E')
+			cmd_str = 'SUB    E'
 			state.execute_addition_and_store(state.a, -state.e)
 			cycles_used = 4
 		}
 		0x94 {
-			logger.debug('SUB    H')
+			cmd_str = 'SUB    H'
 			state.execute_addition_and_store(state.a, -state.h)
 			cycles_used = 4
 		}
 		0x95 {
-			logger.debug('SUB    L')
+			cmd_str = 'SUB    L'
 			state.execute_addition_and_store(state.a, -state.l)
 			cycles_used = 4
 		}
 		0x96 {
-			logger.debug('SUB    M')
+			cmd_str = 'SUB    M'
 			state.execute_addition_and_store(state.a, -(state.mem[utils.create_address(state.h,
 				state.l)]))
 			cycles_used = 7
 		}
 		0x97 {
-			logger.debug('SUB    A')
+			cmd_str = 'SUB    A'
 			state.execute_addition_and_store(state.a, -state.a)
 			cycles_used = 4
 		}
 		0x98 {
-			logger.debug('SBB    B')
+			cmd_str = 'SBB    B'
 			state.sbb(state.a, state.b)
 			cycles_used = 4
 		}
 		0x99 {
-			logger.debug('SBB    C')
+			cmd_str = 'SBB    C'
 			state.sbb(state.a, state.c)
 			cycles_used = 4
 		}
 		0x9a {
-			logger.debug('SBB    D')
+			cmd_str = 'SBB    D'
 			state.sbb(state.a, state.d)
 			cycles_used = 4
 		}
 		0x9b {
-			logger.debug('SBB    E')
+			cmd_str = 'SBB    E'
 			state.sbb(state.a, state.e)
 			cycles_used = 4
 		}
 		0x9c {
-			logger.debug('SBB    H')
+			cmd_str = 'SBB    H'
 			state.sbb(state.a, state.h)
 			cycles_used = 4
 		}
 		0x9d {
-			logger.debug('SBB    L')
+			cmd_str = 'SBB    L'
 			state.sbb(state.a, state.l)
 			cycles_used = 4
 		}
 		0x9e {
-			logger.debug('SBB    M')
+			cmd_str = 'SBB    M'
 			state.sbb(state.a, state.mem[utils.create_address(state.h, state.l)])
 			cycles_used = 7
 		}
 		0x9f {
-			logger.debug('SBB    A')
+			cmd_str = 'SBB    A'
 			state.sbb(state.a, state.a)
 			cycles_used = 4
 		}
 		0xa0 {
-			logger.debug('ANA    B')
+			cmd_str = 'ANA    B'
 			state.and(state.a, state.b)
 			cycles_used = 4
 		}
 		0xa1 {
-			logger.debug('ANA    C')
+			cmd_str = 'ANA    C'
 			state.and(state.a, state.c)
 			cycles_used = 4
 		}
 		0xa2 {
-			logger.debug('ANA    D')
+			cmd_str = 'ANA    D'
 			state.and(state.a, state.d)
 			cycles_used = 4
 		}
 		0xa3 {
-			logger.debug('ANA    E')
+			cmd_str = 'ANA    E'
 			state.and(state.a, state.e)
 			cycles_used = 4
 		}
 		0xa4 {
-			logger.debug('ANA    H')
+			cmd_str = 'ANA    H'
 			state.and(state.a, state.h)
 			cycles_used = 4
 		}
 		0xa5 {
-			logger.debug('ANA    L')
+			cmd_str = 'ANA    L'
 			state.and(state.a, state.l)
 			cycles_used = 4
 		}
 		0xa6 {
-			logger.debug('ANA    M')
+			cmd_str = 'ANA    M'
 			state.and(state.a, state.mem[utils.create_address(state.h, state.l)])
 			cycles_used = 7
 		}
 		0xa7 {
-			logger.debug('ANA    A')
+			cmd_str = 'ANA    A'
 			state.and(state.a, state.a)
 			cycles_used = 4
 		}
 		0xa8 {
-			logger.debug('XRA    B')
+			cmd_str = 'XRA    B'
 			state.xra(state.a, state.b)
 			cycles_used = 4
 		}
 		0xa9 {
-			logger.debug('XRA    C')
+			cmd_str = 'XRA    C'
 			state.xra(state.a, state.c)
 			cycles_used = 4
 		}
 		0xaa {
-			logger.debug('XRA    D')
+			cmd_str = 'XRA    D'
 			state.xra(state.a, state.d)
 			cycles_used = 4
 		}
 		0xab {
-			logger.debug('XRA    E')
+			cmd_str = 'XRA    E'
 			state.xra(state.a, state.e)
 			cycles_used = 4
 		}
 		0xac {
-			logger.debug('XRA    H')
+			cmd_str = 'XRA    H'
 			state.xra(state.a, state.h)
 			cycles_used = 4
 		}
 		0xad {
-			logger.debug('XRA    L')
+			cmd_str = 'XRA    L'
 			state.xra(state.a, state.l)
 			cycles_used = 4
 		}
 		0xae {
-			logger.debug('XRA    M')
+			cmd_str = 'XRA    M'
 			state.xra(state.a, state.mem[utils.create_address(state.h, state.l)])
 			cycles_used = 7
 		}
 		0xaf {
-			logger.debug('XRA    A')
+			cmd_str = 'XRA    A'
 			state.xra(state.a, state.a)
 			cycles_used = 4
 		}
 		0xb0 {
-			logger.debug('ORA    B')
+			cmd_str = 'ORA    B'
 			state.ora(state.a, state.b)
 			cycles_used = 4
 		}
 		0xb1 {
-			logger.debug('ORA    C')
+			cmd_str = 'ORA    C'
 			state.ora(state.a, state.c)
 			cycles_used = 4
 		}
 		0xb2 {
-			logger.debug('ORA    D')
+			cmd_str = 'ORA    D'
 			state.ora(state.a, state.d)
 			cycles_used = 4
 		}
 		0xb3 {
-			logger.debug('ORA    E')
+			cmd_str = 'ORA    E'
 			state.ora(state.a, state.e)
 			cycles_used = 4
 		}
 		0xb4 {
-			logger.debug('ORA    H')
+			cmd_str = 'ORA    H'
 			state.ora(state.a, state.h)
 			cycles_used = 4
 		}
 		0xb5 {
-			logger.debug('ORA    L')
+			cmd_str = 'ORA    L'
 			state.ora(state.a, state.l)
 			cycles_used = 4
 		}
 		0xb6 {
-			logger.debug('ORA    M')
+			cmd_str = 'ORA    M'
 			state.ora(state.a, state.mem[utils.create_address(state.h, state.l)])
 			cycles_used = 7
 		}
 		0xb7 {
-			logger.debug('ORA    A')
+			cmd_str = 'ORA    A'
 			state.ora(state.a, state.a)
 			cycles_used = 4
 		}
 		0xb8 {
-			logger.debug('CMP    B')
+			cmd_str = 'CMP    B'
 			state.execute_addition(state.a, -state.b)
 			cycles_used = 4
 		}
 		0xb9 {
-			logger.debug('CMP    C')
+			cmd_str = 'CMP    C'
 			state.execute_addition(state.a, -state.c)
 			cycles_used = 4
 		}
 		0xba {
-			logger.debug('CMP    D')
+			cmd_str = 'CMP    D'
 			state.execute_addition(state.a, -state.d)
 			cycles_used = 4
 		}
 		0xbb {
-			logger.debug('CMP    E')
+			cmd_str = 'CMP    E'
 			state.execute_addition(state.a, -state.e)
 			cycles_used = 4
 		}
 		0xbc {
-			logger.debug('CMP    H')
+			cmd_str = 'CMP    H'
 			state.execute_addition(state.a, -state.h)
 			cycles_used = 4
 		}
 		0xbd {
-			logger.debug('CMP    L')
+			cmd_str = 'CMP    L'
 			state.execute_addition(state.a, -state.l)
 			cycles_used = 4
 		}
 		0xbe {
-			logger.debug('CMP    M')
+			cmd_str = 'CMP    M'
 			state.execute_addition(state.a, -(state.mem[utils.create_address(state.h,
 				state.l)]))
 			cycles_used = 7
 		}
 		0xbf {
-			logger.debug('CMP    A')
+			cmd_str = 'CMP    A'
 			state.execute_addition(state.a, -state.a)
 			cycles_used = 4
 		}
 		0xc0 {
-			logger.debug('RNZ')
+			cmd_str = 'RNZ'
 			// If Not Zero, execute a RET
 			if !state.flags.z {
 				state.ret()
@@ -1255,12 +1253,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xc1 {
-			logger.debug('POP    B')
+			cmd_str = 'POP    B'
 			state.c, state.b = state.pop()
 			cycles_used = 10
 		}
 		0xc2 {
-			logger.debug('JNZ    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'JNZ    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if !state.flags.z {
 				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
@@ -1270,12 +1268,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 10
 		}
 		0xc3 {
-			logger.debug('JMP    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'JMP    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			cycles_used = 10
 		}
 		0xc4 {
-			logger.debug('CNZ    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'CNZ    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if !state.flags.z {
 				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
@@ -1286,23 +1284,23 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xc5 {
-			logger.debug('PUSH   B')
+			cmd_str = 'PUSH   B'
 			state.push(state.b, state.c)
 			cycles_used = 11
 		}
 		0xc6 {
-			logger.debug('ADI    #$${state.mem[pc+1]:02x}')
+			cmd_str = 'ADI    #$${state.mem[pc+1]:02x}'
 			state.execute_addition_and_store(state.a, state.mem[pc + 1])
 			state.pc++
 			cycles_used = 7
 		}
 		0xc7 {
-			logger.debug('RST    0')
+			cmd_str = 'RST    0'
 			state.call(state.pc, 0)
 			cycles_used = 11
 		}
 		0xc8 {
-			logger.debug('RZ')
+			cmd_str = 'RZ'
 			if state.flags.z {
 				state.ret()
 				cycles_used = 11
@@ -1311,12 +1309,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xc9 {
-			logger.debug('RET')
+			cmd_str = 'RET'
 			state.ret()
 			cycles_used = 10
 		}
 		0xca {
-			logger.debug('JZ     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'JZ     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if state.flags.z {
 				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
@@ -1325,12 +1323,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 10
 		}
 		0xcb {
-			logger.debug('JMP    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'JMP    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			cycles_used = 10
 		}
 		0xcc {
-			logger.debug('CZ     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'CZ     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if state.flags.z {
 				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
@@ -1340,23 +1338,23 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xcd {
-			logger.debug('CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			cycles_used = 17
 		}
 		0xce {
-			logger.debug('ACI    #$${state.mem[pc+1]:02x}')
+			cmd_str = 'ACI    #$${state.mem[pc+1]:02x}'
 			state.execute_addition_and_store(state.a, u16(state.mem[pc + 1]) + u16(utils.bool_byte(state.flags.cy)))
 			state.pc++
 			cycles_used = 7
 		}
 		0xcf {
-			logger.debug('RST    1')
+			cmd_str = 'RST    1'
 			state.call(state.pc, 0x0008)
 			cycles_used = 11
 		}
 		0xd0 {
-			logger.debug('RNC')
+			cmd_str = 'RNC'
 			if !state.flags.cy {
 				state.ret()
 				cycles_used = 11
@@ -1365,12 +1363,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xd1 {
-			logger.debug('POP    D')
+			cmd_str = 'POP    D'
 			state.e, state.d = state.pop()
 			cycles_used = 10
 		}
 		0xd2 {
-			logger.debug('JNC    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'JNC    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if !state.flags.cy {
 				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
@@ -1379,13 +1377,13 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 10
 		}
 		0xd3 {
-			logger.debug('OUT    #$${state.mem[pc+1]:02x}')
+			cmd_str = 'OUT    #$${state.mem[pc+1]:02x}'
 			state.machine.op_out(state.mem[pc + 1])?
 			state.pc++
 			cycles_used = 10
 		}
 		0xd4 {
-			logger.debug('CNC    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'CNC    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if !state.flags.cy {
 				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
@@ -1396,23 +1394,23 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xd5 {
-			logger.debug('PUSH   D')
+			cmd_str = 'PUSH   D'
 			state.push(state.d, state.e)
 			cycles_used = 11
 		}
 		0xd6 {
-			logger.debug('SUI    #$${state.mem[pc+1]:02x}')
+			cmd_str = 'SUI    #$${state.mem[pc+1]:02x}'
 			state.execute_addition_and_store(state.a, -(state.mem[pc + 1]))
 			state.pc++
 			cycles_used = 7
 		}
 		0xd7 {
-			logger.debug('RST    2')
+			cmd_str = 'RST    2'
 			state.call(state.pc, 0x0010)
 			cycles_used = 11
 		}
 		0xd8 {
-			logger.debug('RC')
+			cmd_str = 'RC'
 			if state.flags.cy {
 				state.ret()
 				cycles_used = 11
@@ -1421,12 +1419,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xd9 {
-			logger.debug('RET')
+			cmd_str = 'RET'
 			state.ret()
 			cycles_used = 10
 		}
 		0xda {
-			logger.debug('JC     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'JC     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if state.flags.cy {
 				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
@@ -1435,13 +1433,13 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 10
 		}
 		0xdb {
-			logger.debug('IN     #$${state.mem[pc+1]:02x}')
+			cmd_str = 'IN     #$${state.mem[pc+1]:02x}'
 			state.a = state.machine.op_in(state.mem[pc + 1])?
 			state.pc++
 			cycles_used = 10
 		}
 		0xdc {
-			logger.debug('CC     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'CC     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if state.flags.cy {
 				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
@@ -1451,23 +1449,23 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xdd {
-			logger.debug('CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			cycles_used = 17
 		}
 		0xde {
-			logger.debug('SBI    #$${state.mem[pc+1]:02x}')
+			cmd_str = 'SBI    #$${state.mem[pc+1]:02x}'
 			state.execute_addition_and_store(state.a, -(u16(state.mem[pc + 1])) - u16(utils.bool_byte(state.flags.cy)))
 			state.pc++
 			cycles_used = 7
 		}
 		0xdf {
-			logger.debug('RST    3')
+			cmd_str = 'RST    3'
 			state.call(state.pc, 0x0018)
 			cycles_used = 11
 		}
 		0xe0 {
-			logger.debug('RPO')
+			cmd_str = 'RPO'
 			if !state.flags.p {
 				state.ret()
 				cycles_used = 11
@@ -1476,12 +1474,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xe1 {
-			logger.debug('POP    H')
+			cmd_str = 'POP    H'
 			state.l, state.h = state.pop()
 			cycles_used = 10
 		}
 		0xe2 {
-			logger.debug('JPO    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'JPO    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if !state.flags.p {
 				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
@@ -1490,14 +1488,14 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 10
 		}
 		0xe3 {
-			logger.debug('XTHL')
+			cmd_str = 'XTHL'
 			h, l := state.h, state.l
 			state.h, state.l = state.mem[state.sp + 1], state.mem[state.sp]
 			state.mem[state.sp + 1], state.mem[state.sp] = h, l
 			cycles_used = 18
 		}
 		0xe4 {
-			logger.debug('CPO    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'CPO    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if !state.flags.p {
 				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
@@ -1508,23 +1506,23 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xe5 {
-			logger.debug('PUSH   H')
+			cmd_str = 'PUSH   H'
 			state.push(state.h, state.l)
 			cycles_used = 11
 		}
 		0xe6 {
-			logger.debug('ANI    #$${state.mem[pc+1]:02x}')
+			cmd_str = 'ANI    #$${state.mem[pc+1]:02x}'
 			state.and(state.a, state.mem[pc + 1])
 			state.pc++
 			cycles_used = 7
 		}
 		0xe7 {
-			logger.debug('RST    4')
+			cmd_str = 'RST    4'
 			state.call(state.pc, 0x0020)
 			cycles_used = 11
 		}
 		0xe8 {
-			logger.debug('RPE')
+			cmd_str = 'RPE'
 			if state.flags.p {
 				state.ret()
 				cycles_used = 11
@@ -1533,12 +1531,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xe9 {
-			logger.debug('PCHL')
+			cmd_str = 'PCHL'
 			state.pc = utils.create_address(state.h, state.l)
 			cycles_used = 5
 		}
 		0xea {
-			logger.debug('JPE    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'JPE    $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if state.flags.p {
 				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
@@ -1547,14 +1545,14 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 10
 		}
 		0xeb {
-			logger.debug('XCHG')
+			cmd_str = 'XCHG'
 			temp1, temp2 := state.h, state.l
 			state.h, state.l = state.d, state.e
 			state.d, state.e = temp1, temp2
 			cycles_used = 5
 		}
 		0xec {
-			logger.debug('CPE     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'CPE     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if state.flags.p {
 				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
@@ -1564,23 +1562,23 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xed {
-			logger.debug('CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			cycles_used = 17
 		}
 		0xee {
-			logger.debug('XRI    #$${state.mem[pc+1]:02x}')
+			cmd_str = 'XRI    #$${state.mem[pc+1]:02x}'
 			state.xra(state.a, state.mem[pc + 1])
 			state.pc++
 			cycles_used = 7
 		}
 		0xef {
-			logger.debug('RST    5')
+			cmd_str = 'RST    5'
 			state.call(state.pc, 0x0028)
 			cycles_used = 11
 		}
 		0xf0 {
-			logger.debug('RP')
+			cmd_str = 'RP'
 			if !state.flags.s {
 				state.ret()
 				cycles_used = 11
@@ -1589,7 +1587,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xf1 {
-			logger.debug('POP    PSW')
+			cmd_str = 'POP    PSW'
 			psw, a := state.pop()
 			state.flags.z = ((psw & 0x01) == 0x01)
 			state.flags.s = ((psw & 0x02) == 0x02)
@@ -1600,7 +1598,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 10
 		}
 		0xf2 {
-			logger.debug('JP     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'JP     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			// TODO: Am I sure I have the definition of "P" right?
 			if !state.flags.s {
 				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
@@ -1610,12 +1608,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 10
 		}
 		0xf3 {
-			logger.debug('DI')
+			cmd_str = 'DI'
 			state.interrupt_enabled = false
 			cycles_used = 4
 		}
 		0xf4 {
-			logger.debug('CP     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'CP     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if !state.flags.s {
 				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
@@ -1626,7 +1624,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xf5 {
-			logger.debug('PUSH   PSW')
+			cmd_str = 'PUSH   PSW'
 			psw := (utils.bool_byte(state.flags.z) |
 				(utils.bool_byte(state.flags.s) << 1) |
 				(utils.bool_byte(state.flags.p) << 2) |
@@ -1636,18 +1634,18 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 11
 		}
 		0xf6 {
-			logger.debug('ORI    #$${state.mem[pc+1]:02x}')
+			cmd_str = 'ORI    #$${state.mem[pc+1]:02x}'
 			state.ora(state.a, state.mem[pc + 1])
 			state.pc++
 			cycles_used = 7
 		}
 		0xf7 {
-			logger.debug('RST    6')
+			cmd_str = 'RST    6'
 			state.call(state.pc, 0x0030)
 			cycles_used = 11
 		}
 		0xf8 {
-			logger.debug('RM')
+			cmd_str = 'RM'
 			if state.flags.s {
 				state.ret()
 				cycles_used = 11
@@ -1656,12 +1654,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xf9 {
-			logger.debug('SPHL')
+			cmd_str = 'SPHL'
 			state.sp = utils.create_address(state.h, state.l)
 			cycles_used = 5
 		}
 		0xfa {
-			logger.debug('JM     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'JM     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if state.flags.s {
 				state.pc = utils.create_address(state.mem[pc + 2], state.mem[pc + 1])
 			} else {
@@ -1670,12 +1668,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 10
 		}
 		0xfb {
-			logger.debug('EI')
+			cmd_str = 'EI'
 			state.interrupt_enabled = true
 			cycles_used = 4
 		}
 		0xfc {
-			logger.debug('CM     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'CM     $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			if state.flags.s {
 				state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 				cycles_used = 17
@@ -1685,12 +1683,12 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			}
 		}
 		0xfd {
-			logger.debug('CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}')
+			cmd_str = 'CALL   $${state.mem[pc+2]:02x}${state.mem[pc+1]:02x}'
 			state.call(pc + 3, utils.create_address(state.mem[pc + 2], state.mem[pc + 1]))
 			cycles_used = 17
 		}
 		0xfe {
-			logger.debug('CPI    #$${state.mem[pc+1]:02x}')
+			cmd_str = 'CPI    #$${state.mem[pc+1]:02x}'
 			// Throw away the result, we do not store it
 			// TODO (vcomp): Interesting V compiler bug, when using the negation
 			// operator with the result of the array access it applies the operators
@@ -1700,7 +1698,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			cycles_used = 7
 		}
 		0xff {
-			logger.debug('RST    7')
+			cmd_str = 'RST    7'
 			state.call(state.pc, 0x0038)
 			cycles_used = 11
 		}
@@ -1712,7 +1710,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 	// It can't figure out to use the pointer variant of the State struct
 	// when calling the string function automatically while interpolating,
 	// so a manual usage fixes that for now.
-	logger.debug('8080 State:\n$state.str()')
+	logger.debug('0x${pc:04x} 0x${state.mem[pc]:02x} $cmd_str $state.str()')
 	if cycles_used == 0 {
 		return error('got 0 cycles for instruction ${state.mem[pc]:02x}')
 	}
