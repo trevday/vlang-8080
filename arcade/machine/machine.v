@@ -31,7 +31,9 @@ fn to_micro(t time.Time) u64 {
 const (
 	// Refresh rate is 60 Hz, and interrupts happen twice
 	// per refresh, so 1/120 = ~8333 microseconds
-	interrupt_micro = u64(8333)
+	interrupt_micro        = u64(8333)
+	// 2 MHz, so 2 instructions per microsecond
+	instructions_per_micro = i64(2)
 )
 
 pub fn (mut m Machine) emulate(mut logger log.Log) ? {
@@ -56,7 +58,7 @@ pub fn (mut m Machine) run(mut logger log.Log) ? {
 			lag_cycles -= temp
 		}
 		now := to_micro(time.now())
-		lag_cycles += i64(now - timestamp) * i64(2)
+		lag_cycles += i64(now - timestamp) * instructions_per_micro
 		timestamp = now
 	}
 }
