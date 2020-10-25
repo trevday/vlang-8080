@@ -59,72 +59,30 @@ pub enum Input {
 
 fn (mut state IOState) input_down(i Input) {
 	match i {
-		.coin {
-			// bit 0, is 0 when active
-			state.input_1 &= 0xfe
-		}
-		.tilt {
-			state.input_2 |= 0x04
-		}
-		.player1_start {
-			state.input_1 |= 0x04
-		}
-		.player1_shoot {
-			state.input_1 |= 0x10
-		}
-		.player1_left {
-			state.input_1 |= 0x20
-		}
-		.player1_right {
-			state.input_1 |= 0x40
-		}
-		.player2_start {
-			state.input_1 |= 0x02
-		}
-		.player2_shoot {
-			state.input_2 |= 0x10
-		}
-		.player2_left {
-			state.input_2 |= 0x20
-		}
-		.player2_right {
-			state.input_2 |= 0x40
-		}
+		.coin { state.input_1 |= 0x01 }
+		.tilt { state.input_2 |= 0x04 }
+		.player1_start { state.input_1 |= 0x04 }
+		.player1_shoot { state.input_1 |= 0x10 }
+		.player1_left { state.input_1 |= 0x20 }
+		.player1_right { state.input_1 |= 0x40 }
+		.player2_start { state.input_1 |= 0x02 }
+		.player2_shoot { state.input_2 |= 0x10 }
+		.player2_left { state.input_2 |= 0x20 }
+		.player2_right { state.input_2 |= 0x40 }
 	}
 }
 
 fn (mut state IOState) input_up(i Input) {
 	match i {
-		.coin {
-			// bit 0, is 1 when inactive
-			state.input_1 |= 0x01
-		}
-		.tilt {
-			state.input_2 &= 0xfb
-		}
-		.player1_start {
-			state.input_1 &= 0xfb
-		}
-		.player1_shoot {
-			state.input_1 &= 0xef
-		}
-		.player1_left {
-			state.input_1 &= 0xdf
-		}
-		.player1_right {
-			state.input_1 &= 0xbf
-		}
-		.player2_start {
-			state.input_1 &= 0xfd
-		}
-		.player2_shoot {
-			state.input_2 &= 0xef
-		}
-		.player2_left {
-			state.input_2 &= 0xdf
-		}
-		.player2_right {
-			state.input_2 &= 0xbf
-		}
+		.coin { state.input_1 &= 0xfe }
+		.tilt { state.input_2 &= 0xfb }
+		.player1_start { state.input_1 &= 0xfb }
+		.player1_shoot { state.input_1 &= 0xef }
+		.player1_left { state.input_1 &= 0xdf }
+		.player1_right { state.input_1 &= 0xbf }
+		.player2_start { state.input_1 &= 0xfd }
+		.player2_shoot { state.input_2 &= 0xef }
+		.player2_left { state.input_2 &= 0xdf }
+		.player2_right { state.input_2 &= 0xbf }
 	}
 }

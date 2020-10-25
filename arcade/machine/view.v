@@ -103,11 +103,28 @@ fn read_framebuffer(mut m Machine) {
 // TODO: Platform specific input code, should go in a platform specific place
 fn on_event(e &sapp.Event, mut m Machine) {
 	if e.typ == .key_down {
-		// m.io.input_down()
+		if k := map_input(e.key_code) {
+			m.io.input_down(k)
+		}
 	} else if e.typ == .key_up {
-		// m.io.input_up()
+		if k := map_input(e.key_code) {
+			m.io.input_up(k)
+		}
 	}
 }
 
-// TODO
-// fn map_input(key sapp.KeyCode) ?Input {}
+fn map_input(key sapp.KeyCode) ?Input {
+	match key {
+		.space { return .coin }
+		.backspace { return .tilt }
+		.q { return .player1_start }
+		.w { return .player1_shoot }
+		.a { return .player1_left }
+		.d { return .player1_right }
+		.p { return .player2_start }
+		.up { return .player2_shoot }
+		.left { return .player2_left }
+		.right { return .player2_right }
+		else { return none }
+	}
+}
