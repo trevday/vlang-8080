@@ -20,17 +20,17 @@ fn (state IOState) op_in(port byte) ?byte {
 	}
 }
 
-fn (mut state IOState) op_out(port byte) ? {
+fn (mut state IOState) op_out(port, val byte) ? {
 	match port {
 		2 {
-			state.offset = port & 0x7
+			state.offset = val & 0x7
 		}
 		3 {
 			// TODO: Sound
 		}
 		4 {
 			a, _ := utils.break_address(state.shift)
-			state.shift = utils.create_address(port, a)
+			state.shift = utils.create_address(val, a)
 		}
 		5 {
 			// TODO: Sound

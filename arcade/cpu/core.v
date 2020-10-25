@@ -23,7 +23,7 @@ mut:
 
 pub interface Machine {
 	op_in(port byte) ?byte
-	op_out(port byte) ?
+	op_out(port, val byte) ?
 }
 
 pub struct State {
@@ -1806,7 +1806,7 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 			$if debug {
 				cmd_str = 'OUT    #$${state.mem[pc+1]:02x}'
 			}
-			state.machine.op_out(state.mem[pc + 1])?
+			state.machine.op_out(state.mem[pc + 1], state.a)?
 			state.pc++
 			cycles_used = 10
 		}
