@@ -1,7 +1,12 @@
 import flag
 import log
 import os
+import audio
 import machine
+
+const (
+	num_audio_files = 9
+)
 
 fn main() {
 	mut fp := flag.new_flag_parser(os.args)
@@ -60,8 +65,17 @@ fn main() {
 	}
 	mut logger := log.Log{}
 	logger.set_level(log_level_parsed)
-	mut machine := machine.new(source_bytes)
+	source_dir := os.dir(additional_args[0])
+	mut audio_player := audio.new_player()
+	for i in 0 .. num_audio_files {
+		audio_player.load('$source_dir/${i}.wav') or {
+			logger.error(err)
+			return
+		}
+	}
+	mut machine := machine.new(source_bytes, audio_player)
 	machine.emulate(logger) or {
 		logger.error(err)
+		return
 	}
 }

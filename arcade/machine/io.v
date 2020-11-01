@@ -1,5 +1,6 @@
 module machine
 
+import audio
 import utils
 
 struct IOState {
@@ -9,6 +10,9 @@ mut:
 	offset  byte
 	input_1 byte
 	input_2 byte
+	out_3   byte
+	out_5   byte
+	player  &audio.Player
 }
 
 fn (state IOState) op_in(port byte) ?byte {
@@ -26,14 +30,45 @@ fn (mut state IOState) op_out(port, val byte) ? {
 			state.offset = val & 0x7
 		}
 		3 {
-			// TODO: Sound
+			if val & 0x01 == 0x01 && state.out_3 & 0x01 != 0x01 {
+				state.player.play(0, true)?
+			}
+			if val & 0x01 != 0x01 && state.out_3 & 0x01 == 0x01 {
+				// Sound 0 repeats, so need to stop it when it turns off
+				state.player.stop(0)?
+			}
+			if val & 0x02 == 0x02 && state.out_3 & 0x02 != 0x02 {
+				state.player.play(1, false)?
+			}
+			if val & 0x04 == 0x04 && state.out_3 & 0x04 != 0x04 {
+				state.player.play(2, false)?
+			}
+			if val & 0x08 == 0x08 && state.out_3 & 0x08 != 0x08 {
+				state.player.play(3, false)?
+			}
+			state.out_3 = val
 		}
 		4 {
 			a, _ := utils.break_address(state.shift)
 			state.shift = utils.create_address(val, a)
 		}
 		5 {
-			// TODO: Sound
+			if val & 0x01 == 0x01 && state.out_5 & 0x01 != 0x01 {
+				state.player.play(4, false)?
+			}
+			if val & 0x02 == 0x02 && state.out_5 & 0x02 != 0x02 {
+				state.player.play(5, false)?
+			}
+			if val & 0x04 == 0x04 && state.out_5 & 0x04 != 0x04 {
+				state.player.play(6, false)?
+			}
+			if val & 0x08 == 0x08 && state.out_5 & 0x08 != 0x08 {
+				state.player.play(7, false)?
+			}
+			if val & 0x10 == 0x10 && state.out_5 & 0x10 != 0x10 {
+				state.player.play(8, false)?
+			}
+			state.out_5 = val
 		}
 		6 {
 			// TODO: ?

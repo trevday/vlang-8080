@@ -1,5 +1,6 @@
 module machine
 
+import audio
 import cpu
 import log
 import time
@@ -11,8 +12,10 @@ mut:
 	view View
 }
 
-pub fn new(program &[]byte) Machine {
-	mut io := &IOState{}
+pub fn new(program &[]byte, player &audio.Player) Machine {
+	mut io := &IOState{
+		player: player
+	}
 	mut cpu := cpu.new(program, 0x0000, io)
 	mut m := Machine{
 		cpu: cpu
