@@ -82,6 +82,7 @@ fn frame(mut m Machine) {
 // Convert 1-bit image to 4-byte, and rotate
 // by 90 degrees clockwise
 fn read_framebuffer(mut m Machine) {
+	m.mtx.m_lock()
 	mem_ref := m.cpu.get_mem()
 	for y in 0 .. view_width_pixels {
 		for x in 0 .. view_height_pixels {
@@ -103,6 +104,7 @@ fn read_framebuffer(mut m Machine) {
 			}
 		}
 	}
+	m.mtx.unlock()
 }
 
 fn (mut v View) resize() {
@@ -119,12 +121,16 @@ fn on_event(e &sapp.Event, mut m Machine) {
 	match e.typ {
 		.key_down {
 			if k := map_input(e.key_code) {
+				m.mtx.m_lock()
 				m.io.input_down(k)
+				m.mtx.unlock()
 			}
 		}
 		.key_up {
 			if k := map_input(e.key_code) {
+				m.mtx.m_lock()
 				m.io.input_up(k)
+				m.mtx.unlock()
 			}
 		}
 		.resized, .restored, .resumed {

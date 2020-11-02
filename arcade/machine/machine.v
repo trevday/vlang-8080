@@ -3,6 +3,7 @@ module machine
 import audio
 import cpu
 import log
+import sync
 import time
 
 pub struct Machine {
@@ -10,6 +11,7 @@ mut:
 	cpu  cpu.State
 	io   &IOState
 	view View
+	mtx &sync.Mutex
 }
 
 pub fn new(program &[]byte, player &audio.Player) Machine {
@@ -20,6 +22,7 @@ pub fn new(program &[]byte, player &audio.Player) Machine {
 	mut m := Machine{
 		cpu: cpu
 		io: io
+		mtx: &sync.Mutex{}
 	}
 	m.view = new_view(mut m)
 	return m
@@ -50,6 +53,7 @@ pub fn (mut m Machine) run(mut logger log.Log) {
 	mut next_interrupt_time := timestamp + interrupt_micro
 	mut next_interrupt_instruction := byte(1)
 	for {
+		m.mtx.m_lock()
 		if timestamp >= next_interrupt_time {
 			next_interrupt_time += interrupt_micro
 			m.cpu.interrupt(next_interrupt_instruction)
@@ -65,6 +69,7 @@ pub fn (mut m Machine) run(mut logger log.Log) {
 			}
 			lag_cycles -= temp
 		}
+		m.mtx.unlock()
 		now := to_micro(time.now())
 		lag_cycles += i64(now - timestamp) * instructions_per_micro
 		timestamp = now
