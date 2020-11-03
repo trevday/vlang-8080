@@ -13,7 +13,7 @@ fn main() {
 	fp.application('8080 Emulator')
 	fp.version('v0.0.1')
 	fp.description('Emulates program execution for a program designed to run on the Intel 8080 CPU.')
-	fp.limit_free_args_to_exactly(1)
+	fp.limit_free_args_to_at_least(1)
 	fp.skip_executable()
 	log_level_str := fp.string('log', 0, 'fatal', 'Log level, options are: fatal, error, warn, info, debug')
 	// TODO (vcomp): I would prefer to use the match as an expression
@@ -59,16 +59,20 @@ fn main() {
 		println(fp.usage())
 		return
 	}
-	source_bytes := os.read_bytes(additional_args[0]) or {
-		eprintln('File ${additional_args[0]} could not be read: $err')
-		return
+	mut source_bytes := []byte{}
+	for additional_arg in additional_args {
+		arg_bytes := os.read_bytes(additional_arg) or {
+			eprintln('File $additional_arg could not be read: $err')
+			return
+		}
+		source_bytes << arg_bytes
 	}
 	mut logger := log.Log{}
 	logger.set_level(log_level_parsed)
-	source_dir := os.dir(additional_args[0])
+	audio_source_dir := os.dir(additional_args[0])
 	mut audio_player := audio.new_player()
 	for i in 0 .. num_audio_files {
-		audio_player.load('$source_dir/${i}.wav') or {
+		audio_player.load('$audio_source_dir/${i}.wav') or {
 			logger.error(err)
 			return
 		}
