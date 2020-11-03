@@ -195,10 +195,6 @@ fn (mut state State) dad(a, b byte) {
 	state.l = l
 }
 
-// TODO: Better separation of logging for debug and functionality;
-// Split out debug logging into the disassembly function? Be able to
-// run disassembler as an independent program, without emulation.
-// Clean up this giant if statement.
 pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 	instruction_attrs := get_attributes(state.mem[state.pc])?
 	exec_result := instruction_attrs.execute(state)?
@@ -216,7 +212,23 @@ pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
 	// when calling the string function automatically while interpolating,
 	// so a manual usage fixes that for now.
 	$if debug {
-		logger.debug('0x${pc:04x} 0x${state.mem[pc]:02x} ${instruction_attrs.debug(state)} $state.str()')
+		debug_out := instruction_attrs.debug(state.mem, pc)
+		logger.debug('0x${pc:04x} 0x${state.mem[pc]:02x} $debug_out.instr_string $state.str()')
 	}
 	return exec_result.cycles_used
+}
+
+pub fn disassemble(source_bytes []byte) ?string {
+	mut output := ''
+	mut i := 0
+	for i < source_bytes.len {
+		instruction_attrs := get_attributes(source_bytes[i])?
+		debug_out := instruction_attrs.debug(source_bytes, i)
+		output += '${i:04x} $debug_out.instr_string\n'
+		if debug_out.instr_bytes == 0 {
+			return error('instruction debug bytes not set for ${source_bytes[i]:02x}')
+		}
+		i += debug_out.instr_bytes
+	}
+	return output
 }

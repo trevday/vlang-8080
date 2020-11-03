@@ -2,6 +2,7 @@ import flag
 import log
 import os
 import audio
+import cpu
 import machine
 
 const (
@@ -50,6 +51,7 @@ fn main() {
 	// println(fp.usage())
 	// return
 	// }
+	disassemble_path := fp.string('disassemble', 0, '', 'Boots in disassembly mode, which will output human readable instructions at the given filepath, from the given binary, instead of running it.')
 	additional_args := fp.finalize() or {
 		eprintln(err)
 		println(fp.usage())
@@ -69,17 +71,33 @@ fn main() {
 	}
 	mut logger := log.Log{}
 	logger.set_level(log_level_parsed)
+	if disassemble_path != '' {
+		if os.exists(disassemble_path) {
+			eprintln('please provide a file path that does not exist for disassembly output, $disassemble_path already exists')
+			return
+		}
+		disassembled := cpu.disassemble(source_bytes) or {
+			eprintln(err)
+			return
+		}
+		os.write_file(disassemble_path, disassembled) or {
+			eprintln(err)
+			return
+		}
+		println('Successfully disassembled and output to $disassemble_path')
+		return
+	}
 	audio_source_dir := os.dir(additional_args[0])
 	mut audio_player := audio.new_player()
 	for i in 0 .. num_audio_files {
 		audio_player.load('$audio_source_dir/${i}.wav') or {
-			logger.error(err)
+			eprintln(err)
 			return
 		}
 	}
 	mut machine := machine.new(source_bytes, audio_player)
 	machine.emulate(logger) or {
-		logger.error(err)
+		eprintln(err)
 		return
 	}
 }
