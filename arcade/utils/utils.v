@@ -1,5 +1,7 @@
 module utils
 
+import time
+
 const (
 	u16_max = u16(65535)
 )
@@ -46,4 +48,10 @@ pub fn parity(x byte) bool {
 	temp = temp >> 1
 	p = p ^ (temp & 1)
 	return p == 0
+}
+
+// TODO (vcomp)
+[inline]
+pub fn to_micro(t time.Time) u64 {
+	return (t.unix * u64(1000000)) + u64(t.microsecond)
 }

@@ -5,13 +5,14 @@ import cpu
 import log
 import sync
 import time
+import utils
 
 pub struct Machine {
 mut:
 	cpu  cpu.State
 	io   &IOState
 	view View
-	mtx &sync.Mutex
+	mtx  &sync.Mutex
 }
 
 pub fn new(program &[]byte, player &audio.Player) Machine {
@@ -26,12 +27,6 @@ pub fn new(program &[]byte, player &audio.Player) Machine {
 	}
 	m.view = new_view(mut m)
 	return m
-}
-
-// TODO (vcomp)
-[inline]
-fn to_micro(t time.Time) u64 {
-	return (t.unix * u64(1000000)) + u64(t.microsecond)
 }
 
 const (
@@ -49,7 +44,7 @@ pub fn (mut m Machine) emulate(mut logger log.Log) ? {
 
 pub fn (mut m Machine) run(mut logger log.Log) {
 	mut lag_cycles := i64(0)
-	mut timestamp := to_micro(time.now())
+	mut timestamp := utils.to_micro(time.now())
 	mut next_interrupt_time := timestamp + interrupt_micro
 	mut next_interrupt_instruction := byte(1)
 	for {
@@ -70,7 +65,7 @@ pub fn (mut m Machine) run(mut logger log.Log) {
 			lag_cycles -= temp
 		}
 		m.mtx.unlock()
-		now := to_micro(time.now())
+		now := utils.to_micro(time.now())
 		lag_cycles += i64(now - timestamp) * instructions_per_micro
 		timestamp = now
 	}
