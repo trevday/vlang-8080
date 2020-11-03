@@ -71,7 +71,7 @@ fn (mut state IOState) op_out(port, val byte) ? {
 			state.out_5 = val
 		}
 		6 {
-			// TODO: ?
+			// No-op
 		}
 		else {
 			return error('port unsupported for out by machine')

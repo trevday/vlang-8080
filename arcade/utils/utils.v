@@ -1,5 +1,9 @@
 module utils
 
+const (
+	u16_max = u16(65535)
+)
+
 pub fn bool_byte(b bool) byte {
 	if b {
 		return 1
