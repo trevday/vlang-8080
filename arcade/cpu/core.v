@@ -18,6 +18,9 @@ mut:
 	// Carryover
 	cy bool
 	// Auxiliary Carry
+	// TODO: I think the ac flag is sort of broken after
+	// subtraction operations, but it works well enough
+	// for my goals at the moment
 	ac bool
 }
 
