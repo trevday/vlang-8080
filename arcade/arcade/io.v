@@ -6,13 +6,14 @@ import utils
 struct IO {
 mut:
 	// Special 16 bit shift register
-	shift   u16
-	offset  byte
-	input_1 byte
-	input_2 byte
-	out_3   byte
-	out_5   byte
+	shift         u16
+	offset        byte
+	input_1       byte
+	input_2       byte
+	out_3         byte
+	out_5         byte
 	audio_player  &audio.Player
+	audio_enabled bool
 }
 
 fn (io IO) op_in(port byte) ?byte {
@@ -30,21 +31,23 @@ fn (mut io IO) op_out(port, val byte) ? {
 			io.offset = val & 0x7
 		}
 		3 {
-			if val & 0x01 == 0x01 && io.out_3 & 0x01 != 0x01 {
-				io.audio_player.play(0, true)?
-			}
-			if val & 0x01 != 0x01 && io.out_3 & 0x01 == 0x01 {
-				// Sound 0 repeats, so need to stop it when it turns off
-				io.audio_player.stop(0)?
-			}
-			if val & 0x02 == 0x02 && io.out_3 & 0x02 != 0x02 {
-				io.audio_player.play(1, false)?
-			}
-			if val & 0x04 == 0x04 && io.out_3 & 0x04 != 0x04 {
-				io.audio_player.play(2, false)?
-			}
-			if val & 0x08 == 0x08 && io.out_3 & 0x08 != 0x08 {
-				io.audio_player.play(3, false)?
+			if io.audio_enabled {
+				if val & 0x01 == 0x01 && io.out_3 & 0x01 != 0x01 {
+					io.audio_player.play(0, true)?
+				}
+				if val & 0x01 != 0x01 && io.out_3 & 0x01 == 0x01 {
+					// Sound 0 repeats, so need to stop it when it turns off
+					io.audio_player.stop(0)?
+				}
+				if val & 0x02 == 0x02 && io.out_3 & 0x02 != 0x02 {
+					io.audio_player.play(1, false)?
+				}
+				if val & 0x04 == 0x04 && io.out_3 & 0x04 != 0x04 {
+					io.audio_player.play(2, false)?
+				}
+				if val & 0x08 == 0x08 && io.out_3 & 0x08 != 0x08 {
+					io.audio_player.play(3, false)?
+				}
 			}
 			io.out_3 = val
 		}
@@ -53,20 +56,22 @@ fn (mut io IO) op_out(port, val byte) ? {
 			io.shift = utils.create_address(val, a)
 		}
 		5 {
-			if val & 0x01 == 0x01 && io.out_5 & 0x01 != 0x01 {
-				io.audio_player.play(4, false)?
-			}
-			if val & 0x02 == 0x02 && io.out_5 & 0x02 != 0x02 {
-				io.audio_player.play(5, false)?
-			}
-			if val & 0x04 == 0x04 && io.out_5 & 0x04 != 0x04 {
-				io.audio_player.play(6, false)?
-			}
-			if val & 0x08 == 0x08 && io.out_5 & 0x08 != 0x08 {
-				io.audio_player.play(7, false)?
-			}
-			if val & 0x10 == 0x10 && io.out_5 & 0x10 != 0x10 {
-				io.audio_player.play(8, false)?
+			if io.audio_enabled {
+				if val & 0x01 == 0x01 && io.out_5 & 0x01 != 0x01 {
+					io.audio_player.play(4, false)?
+				}
+				if val & 0x02 == 0x02 && io.out_5 & 0x02 != 0x02 {
+					io.audio_player.play(5, false)?
+				}
+				if val & 0x04 == 0x04 && io.out_5 & 0x04 != 0x04 {
+					io.audio_player.play(6, false)?
+				}
+				if val & 0x08 == 0x08 && io.out_5 & 0x08 != 0x08 {
+					io.audio_player.play(7, false)?
+				}
+				if val & 0x10 == 0x10 && io.out_5 & 0x10 != 0x10 {
+					io.audio_player.play(8, false)?
+				}
 			}
 			io.out_5 = val
 		}

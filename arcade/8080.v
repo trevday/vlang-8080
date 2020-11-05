@@ -52,6 +52,7 @@ fn main() {
 	// return
 	// }
 	disassemble_path := fp.string('disassemble', 0, '', 'Boots in disassembly mode, which will output human readable instructions at the given filepath, from the given binary, instead of running it.')
+	sound_files_dir_path := fp.string('sound-files-dir', 0, '', 'Sound file path directory when running arcade hardware, should contain nine .wav files named 0-8')
 	additional_args := fp.finalize() or {
 		eprintln(err)
 		println(fp.usage())
@@ -87,15 +88,25 @@ fn main() {
 		println('Successfully disassembled and output to $disassemble_path')
 		return
 	}
-	audio_source_dir := os.dir(additional_args[0])
 	mut audio_player := audio.new_player()
-	for i in 0 .. num_audio_files {
-		audio_player.load('$audio_source_dir/${i}.wav') or {
-			eprintln(err)
+	mut audio_enabled := false
+	if sound_files_dir_path != '' {
+		if os.exists(sound_files_dir_path) && os.is_dir(sound_files_dir_path) {
+			audio_enabled = true
+		} else {
+			eprintln('Given sound files directory $sound_files_dir_path is not valid')
 			return
 		}
 	}
-	mut hardware := arcade.new_hardware(source_bytes, audio_player)
+	if audio_enabled {
+		for i in 0 .. num_audio_files {
+			audio_player.load('$sound_files_dir_path/${i}.wav') or {
+				eprintln(err)
+				return
+			}
+		}
+	}
+	mut hardware := arcade.new_hardware(source_bytes, audio_player, audio_enabled)
 	hardware.run(logger) or {
 		eprintln(err)
 		return

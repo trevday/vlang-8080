@@ -15,9 +15,10 @@ mut:
 	mtx  &sync.Mutex
 }
 
-pub fn new_hardware(program &[]byte, audio_player &audio.Player) Hardware {
+pub fn new_hardware(program &[]byte, audio_player &audio.Player, audio_enabled bool) Hardware {
 	mut io := &IO{
 		audio_player: audio_player
+		audio_enabled: audio_enabled
 	}
 	mut cpu := cpu.new(program, 0x0000, io)
 	mut hardware := Hardware{
