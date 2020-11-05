@@ -9,20 +9,19 @@ import utils
 
 pub struct Hardware {
 mut:
-	cpu  cpu.State
+	cpu  &cpu.State
 	io   &IO
 	view View
 	mtx  &sync.Mutex
 }
 
-pub fn new_hardware(program &[]byte, audio_player &audio.Player, audio_enabled bool) Hardware {
+pub fn new_hardware(program &[]byte, start_addr u16, audio_player &audio.Player, audio_enabled bool) Hardware {
 	mut io := &IO{
 		audio_player: audio_player
 		audio_enabled: audio_enabled
 	}
-	mut cpu := cpu.new(program, 0x0000, io)
 	mut hardware := Hardware{
-		cpu: cpu
+		cpu: cpu.new(program, start_addr, io)
 		io: io
 		mtx: &sync.Mutex{}
 	}

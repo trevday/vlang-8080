@@ -30,7 +30,7 @@ pub interface Machine {
 }
 
 pub struct State {
-mut:
+pub mut:
 	// Registers
 	a                 byte
 	b                 byte
@@ -52,8 +52,8 @@ mut:
 	machine           &Machine
 }
 
-pub fn new(program &[]byte, start_addr u16, machine &Machine) State {
-	mut state := State{
+pub fn new(program &[]byte, start_addr u16, machine &Machine) &State {
+	mut state := &State{
 		machine: machine
 		mem: []byte{len: max_memory, init: 0}
 	}
@@ -78,6 +78,13 @@ pub fn (mut state State) interrupt(rst byte) ? {
 
 pub fn (state &State) get_mem() &[]byte {
 	return &state.mem
+}
+
+pub fn (mut state State) edit_mem(addr u16, val byte) ? {
+	if addr > state.mem.len - 1 {
+		return error('out of bounds editing cpu memory at ${addr:04x}')
+	}
+	state.mem[addr] = val
 }
 
 fn (state &State) str() string {
