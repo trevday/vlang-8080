@@ -3,7 +3,7 @@ import log
 import os
 import audio
 import cpu
-import machine
+import arcade
 
 const (
 	num_audio_files = 9
@@ -95,8 +95,8 @@ fn main() {
 			return
 		}
 	}
-	mut machine := machine.new(source_bytes, audio_player)
-	machine.emulate(logger) or {
+	mut hardware := arcade.new_hardware(source_bytes, audio_player)
+	hardware.run(logger) or {
 		eprintln(err)
 		return
 	}

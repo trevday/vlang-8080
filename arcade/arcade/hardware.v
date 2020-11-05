@@ -1,4 +1,4 @@
-module machine
+module arcade
 
 import audio
 import cpu
@@ -7,26 +7,26 @@ import sync
 import time
 import utils
 
-pub struct Machine {
+pub struct Hardware {
 mut:
 	cpu  cpu.State
-	io   &IOState
+	io   &IO
 	view View
 	mtx  &sync.Mutex
 }
 
-pub fn new(program &[]byte, player &audio.Player) Machine {
-	mut io := &IOState{
-		player: player
+pub fn new_hardware(program &[]byte, audio_player &audio.Player) Hardware {
+	mut io := &IO{
+		audio_player: audio_player
 	}
 	mut cpu := cpu.new(program, 0x0000, io)
-	mut m := Machine{
+	mut hardware := Hardware{
 		cpu: cpu
 		io: io
 		mtx: &sync.Mutex{}
 	}
-	m.view = new_view(mut m)
-	return m
+	hardware.view = new_view(mut hardware)
+	return hardware
 }
 
 const (
@@ -37,21 +37,21 @@ const (
 	instructions_per_micro = i64(2)
 )
 
-pub fn (mut m Machine) emulate(mut logger log.Log) ? {
-	go m.run(logger)
-	m.view.context.run()
+pub fn (mut hardware Hardware) run(mut logger log.Log) ? {
+	go hardware.run_cpu(logger)
+	hardware.view.context.run()
 }
 
-pub fn (mut m Machine) run(mut logger log.Log) {
+fn (mut hardware Hardware) run_cpu(mut logger log.Log) {
 	mut lag_cycles := i64(0)
 	mut timestamp := utils.to_micro(time.now())
 	mut next_interrupt_time := timestamp + interrupt_micro
 	mut next_interrupt_instruction := byte(1)
 	for {
-		m.mtx.m_lock()
+		hardware.mtx.m_lock()
 		if timestamp >= next_interrupt_time {
 			next_interrupt_time += interrupt_micro
-			m.cpu.interrupt(next_interrupt_instruction)
+			hardware.cpu.interrupt(next_interrupt_instruction)
 			next_interrupt_instruction ^= 3
 		}
 		for lag_cycles > 0 {
@@ -59,12 +59,12 @@ pub fn (mut m Machine) run(mut logger log.Log) {
 			// here but I had a lot of difficulty getting errors to
 			// pass between threads via channels, they are not quite
 			// robust enough yet to support that.
-			temp := m.cpu.emulate(logger) or {
+			temp := hardware.cpu.step(logger) or {
 				panic(err)
 			}
 			lag_cycles -= temp
 		}
-		m.mtx.unlock()
+		hardware.mtx.unlock()
 		now := utils.to_micro(time.now())
 		lag_cycles += i64(now - timestamp) * instructions_per_micro
 		timestamp = now

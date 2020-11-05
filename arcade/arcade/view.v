@@ -1,4 +1,4 @@
-module machine
+module arcade
 
 import gg
 import gx
@@ -22,7 +22,7 @@ mut:
 	height      int = view_height_pixels
 }
 
-fn new_view(mut m Machine) View {
+fn new_view(mut hardware Hardware) View {
 	mut v := View{
 		framebuffer: []byte{len: view_width_pixels * view_height_pixels * image_channels, init: 0}
 		context: gg.new_context({
@@ -33,7 +33,7 @@ fn new_view(mut m Machine) View {
 			create_window: true
 			resizable: true
 			window_title: 'V 8080'
-			user_data: m
+			user_data: hardware
 			frame_fn: frame
 			event_fn: on_event
 		})
@@ -41,16 +41,16 @@ fn new_view(mut m Machine) View {
 	return v
 }
 
-fn frame(mut m Machine) {
-	m.view.context.begin()
+fn frame(mut hardware Hardware) {
+	hardware.view.context.begin()
 	// Read the 8080's framebuffer and create an image out of it
-	read_framebuffer(mut m)
+	read_framebuffer(mut hardware)
 	mut img := gg.Image{
 		width: view_width_pixels
 		height: view_height_pixels
 		nr_channels: image_channels
 		ok: true
-		data: m.view.framebuffer.data
+		data: hardware.view.framebuffer.data
 	}
 	img.init_sokol_image()
 	// Draw image
@@ -60,10 +60,10 @@ fn frame(mut m Machine) {
 	v1 := f32(1.0)
 	x0 := f32(0)
 	y0 := f32(0)
-	x1 := m.view.width * m.view.context.scale
-	y1 := m.view.height * m.view.context.scale
+	x1 := hardware.view.width * hardware.view.context.scale
+	y1 := hardware.view.height * hardware.view.context.scale
 	//
-	sgl.load_pipeline(m.view.context.timage_pip)
+	sgl.load_pipeline(hardware.view.context.timage_pip)
 	sgl.enable_texture()
 	sgl.texture(img.simg)
 	sgl.begin_quads()
@@ -74,16 +74,16 @@ fn frame(mut m Machine) {
 	sgl.v2f_t2f(x0, y1, u0, v1)
 	sgl.end()
 	sgl.disable_texture()
-	m.view.context.end()
+	hardware.view.context.end()
 	// Free image
 	img.simg.free()
 }
 
 // Convert 1-bit image to 4-byte, and rotate
 // by 90 degrees clockwise
-fn read_framebuffer(mut m Machine) {
-	m.mtx.m_lock()
-	mem_ref := m.cpu.get_mem()
+fn read_framebuffer(mut hardware Hardware) {
+	hardware.mtx.m_lock()
+	mem_ref := hardware.cpu.get_mem()
 	for y in 0 .. view_width_pixels {
 		for x in 0 .. view_height_pixels {
 			bit_idx := (y * view_height_pixels) + x
@@ -92,19 +92,19 @@ fn read_framebuffer(mut m Machine) {
 			pixel := data & (1 << (bit_idx - (mem_idx * 8)))
 			out_offset := (((view_height_pixels - 1 - x) * view_width_pixels) + y) * image_channels
 			if pixel == 0 {
-				m.view.framebuffer[out_offset] = pixel_off
-				m.view.framebuffer[out_offset + 1] = pixel_off
-				m.view.framebuffer[out_offset + 2] = pixel_off
-				m.view.framebuffer[out_offset + 3] = pixel_on
+				hardware.view.framebuffer[out_offset] = pixel_off
+				hardware.view.framebuffer[out_offset + 1] = pixel_off
+				hardware.view.framebuffer[out_offset + 2] = pixel_off
+				hardware.view.framebuffer[out_offset + 3] = pixel_on
 			} else {
-				m.view.framebuffer[out_offset] = pixel_on
-				m.view.framebuffer[out_offset + 1] = pixel_on
-				m.view.framebuffer[out_offset + 2] = pixel_on
-				m.view.framebuffer[out_offset + 3] = pixel_on
+				hardware.view.framebuffer[out_offset] = pixel_on
+				hardware.view.framebuffer[out_offset + 1] = pixel_on
+				hardware.view.framebuffer[out_offset + 2] = pixel_on
+				hardware.view.framebuffer[out_offset + 3] = pixel_on
 			}
 		}
 	}
-	m.mtx.unlock()
+	hardware.mtx.unlock()
 }
 
 fn (mut v View) resize() {
@@ -117,24 +117,24 @@ fn (mut v View) resize() {
 }
 
 // TODO: Platform specific input code, should go in a platform specific place
-fn on_event(e &sapp.Event, mut m Machine) {
+fn on_event(e &sapp.Event, mut hardware Hardware) {
 	match e.typ {
 		.key_down {
 			if k := map_input(e.key_code) {
-				m.mtx.m_lock()
-				m.io.input_down(k)
-				m.mtx.unlock()
+				hardware.mtx.m_lock()
+				hardware.io.input_down(k)
+				hardware.mtx.unlock()
 			}
 		}
 		.key_up {
 			if k := map_input(e.key_code) {
-				m.mtx.m_lock()
-				m.io.input_up(k)
-				m.mtx.unlock()
+				hardware.mtx.m_lock()
+				hardware.io.input_up(k)
+				hardware.mtx.unlock()
 			}
 		}
 		.resized, .restored, .resumed {
-			m.view.resize()
+			hardware.view.resize()
 		}
 		else {
 			// No-op

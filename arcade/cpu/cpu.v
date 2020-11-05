@@ -195,7 +195,7 @@ fn (mut state State) dad(a, b byte) {
 	state.l = l
 }
 
-pub fn (mut state State) emulate(mut logger log.Log) ?u32 {
+pub fn (mut state State) step(mut logger log.Log) ?u32 {
 	instruction_attrs := get_attributes(state.mem[state.pc])?
 	exec_result := instruction_attrs.execute(state)?
 	if exec_result.bytes_used == utils.u16_max {
