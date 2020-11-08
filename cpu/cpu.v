@@ -4,7 +4,7 @@ import log
 import utils
 
 pub const (
-	max_memory = 0xffff
+	max_memory = 0x10000
 )
 
 struct Flags {
