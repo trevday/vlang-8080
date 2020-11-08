@@ -121,14 +121,14 @@ fn (mut state State) execute_addition_and_store(x1, x2 u16) {
 fn (mut state State) inr(x1 byte) byte {
 	res := x1 + 1
 	state.set_flags(res)
-	state.flags.ac = ((x1 & 0xf) + 0x1 > 0xf)
+	state.flags.ac = (res & 0xf) == 0x0
 	return res
 }
 
 fn (mut state State) dcr(x1 byte) byte {
 	res := x1 - 1
 	state.set_flags(res)
-	state.flags.ac = ((x1 & 0xf) + 0x1 > 0xf)
+	state.flags.ac = (res & 0xf) != 0xf
 	return res
 }
 
