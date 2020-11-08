@@ -93,7 +93,7 @@ fn (state &State) str() string {
 		'z: $state.flags.z s: $state.flags.s p: $state.flags.p cy: $state.flags.cy ac: $state.flags.ac'
 }
 
-// NOTE: cy is not set here because different instructions
+// NOTE: cy and ac are not set here because different instructions
 // affect the carryover in different ways, but nearly all
 // affect the other flags in the same way.
 fn (mut state State) set_flags(x byte) {
@@ -103,19 +103,31 @@ fn (mut state State) set_flags(x byte) {
 	state.flags.p = utils.parity(x)
 }
 
-fn (mut state State) execute_addition(x1, x2 u16) byte {
-	answer := x1 + x2
+fn (mut state State) execute_addition(x1, x2 byte, cy bool) byte {
+	answer := u16(x1) + u16(x2) + u16(utils.bool_byte(cy))
 	// Only use the bottom 8 bits of the answer, carryover
 	// is handled by flags (cy)
 	truncated := byte(answer & 0xff)
 	state.set_flags(truncated)
 	state.flags.cy = (answer > 0xff)
-	state.flags.ac = ((x1 & 0xf) + (x2 & 0xf) > 0xf)
+	state.flags.ac = ((x1 & 0xf) + (x2 & 0xf) + utils.bool_byte(cy) > 0xf)
 	return truncated
 }
 
-fn (mut state State) execute_addition_and_store(x1, x2 u16) {
-	state.a = state.execute_addition(x1, x2)
+fn (mut state State) execute_subtraction(x1, x2 byte, cy bool) byte {
+	res := state.execute_addition(x1, ~x2, !cy)
+	state.flags.cy = !state.flags.cy
+	return res
+}
+
+fn (mut state State) execute_addition_and_store(x1, x2 byte) {
+	state.a = state.execute_addition(x1, x2, false)
+}
+
+fn (mut state State) execute_subtraction_and_store(x1, x2 byte) {
+	// True because if carry is not taken into account it is always
+	// inverted during subtraction
+	state.a = state.execute_subtraction(x1, x2, false)
 }
 
 fn (mut state State) inr(x1 byte) byte {
@@ -133,17 +145,11 @@ fn (mut state State) dcr(x1 byte) byte {
 }
 
 fn (mut state State) adc(x1, x2 byte) {
-	new_x2 := u16(x2) + u16(utils.bool_byte(state.flags.cy))
-	// TODO: Identify if there is an error when calculating auxiliary carry
-	// for ADC. What should it be measuring, the result of adding all 3 or
-	// the result of adding the original 2?
-	state.execute_addition_and_store(u16(x1), new_x2)
+	state.a = state.execute_addition(x1, x2, state.flags.cy)
 }
 
 fn (mut state State) sbb(x1, x2 byte) {
-	new_x2 := u16(-x2) - u16(utils.bool_byte(state.flags.cy))
-	// TODO: Same as ADC, determine if there is an issue with AC flag.
-	state.execute_addition_and_store(u16(x1), new_x2)
+	state.a = state.execute_subtraction(x1, x2, state.flags.cy)
 }
 
 fn (mut state State) set_logic_flags(x byte) {

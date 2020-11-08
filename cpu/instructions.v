@@ -2261,7 +2261,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition_and_store(state.a, -state.b)
+					state.execute_subtraction_and_store(state.a, state.b)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2276,7 +2276,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition_and_store(state.a, -state.c)
+					state.execute_subtraction_and_store(state.a, state.c)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2291,7 +2291,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition_and_store(state.a, -state.d)
+					state.execute_subtraction_and_store(state.a, state.d)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2306,7 +2306,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition_and_store(state.a, -state.e)
+					state.execute_subtraction_and_store(state.a, state.e)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2321,7 +2321,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition_and_store(state.a, -state.h)
+					state.execute_subtraction_and_store(state.a, state.h)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2336,7 +2336,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition_and_store(state.a, -state.l)
+					state.execute_subtraction_and_store(state.a, state.l)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2351,8 +2351,8 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition_and_store(state.a, -(state.mem[utils.create_address(state.h,
-						state.l)]))
+					state.execute_subtraction_and_store(state.a, state.mem[utils.create_address(state.h,
+						state.l)])
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 7
@@ -2367,7 +2367,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition_and_store(state.a, -state.a)
+					state.execute_subtraction_and_store(state.a, state.a)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2862,7 +2862,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, -state.b)
+					state.execute_addition(state.a, ~state.b, true)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2877,7 +2877,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, -state.c)
+					state.execute_addition(state.a, ~state.c, true)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2892,7 +2892,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, -state.d)
+					state.execute_addition(state.a, ~state.d, true)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2907,7 +2907,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, -state.e)
+					state.execute_addition(state.a, ~state.e, true)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2922,7 +2922,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, -state.h)
+					state.execute_addition(state.a, ~state.h, true)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2937,7 +2937,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, -state.l)
+					state.execute_addition(state.a, ~state.l, true)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2952,8 +2952,8 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, -(state.mem[utils.create_address(state.h,
-						state.l)]))
+					state.execute_addition(state.a, ~(state.mem[utils.create_address(state.h,
+						state.l)]), true)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 7
@@ -2968,7 +2968,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, -state.a)
+					state.execute_addition(state.a, ~state.a, true)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -3098,7 +3098,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition_and_store(state.a, state.mem[state.pc + 1])
+					state.adc(state.a, state.mem[state.pc + 1])
 					return ExecutionResult{
 						bytes_used: 2
 						cycles_used: 7
@@ -3242,7 +3242,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition_and_store(state.a, u16(state.mem[state.pc + 1]) + u16(utils.bool_byte(state.flags.cy)))
+					state.adc(state.a, state.mem[state.pc + 1])
 					return ExecutionResult{
 						bytes_used: 2
 						cycles_used: 7
@@ -3380,7 +3380,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition_and_store(state.a, -(state.mem[state.pc + 1]))
+					state.execute_subtraction_and_store(state.a, state.mem[state.pc + 1])
 					return ExecutionResult{
 						bytes_used: 2
 						cycles_used: 7
@@ -3518,8 +3518,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition_and_store(state.a, -(u16(state.mem[state.pc + 1])) -
-						u16(utils.bool_byte(state.flags.cy)))
+					state.sbb(state.a, state.mem[state.pc + 1])
 					return ExecutionResult{
 						bytes_used: 2
 						cycles_used: 7
@@ -4110,11 +4109,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					// Throw away the result, we do not store it
-					// TODO (vcomp): Interesting V compiler bug, when using the negation
-					// operator with the result of the array access it applies the operators
-					// in an incorrect ordering.
-					_ = state.execute_addition(state.a, -(state.mem[state.pc + 1]))
+					state.execute_addition(state.a, ~(state.mem[state.pc + 1]), true)
 					return ExecutionResult{
 						bytes_used: 2
 						cycles_used: 7
