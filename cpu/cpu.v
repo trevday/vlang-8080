@@ -204,6 +204,14 @@ fn (mut state State) dad(a, b byte) {
 
 pub fn (mut state State) step(mut logger log.Log) ?u32 {
 	instruction_attrs := get_attributes(state.mem[state.pc])?
+	// TODO (vcomp): The use of '.str()' here seems to be a bug with the V compiler;
+	// It can't figure out to use the pointer variant of the State struct
+	// when calling the string function automatically while interpolating,
+	// so a manual usage fixes that for now.
+	$if debug {
+		debug_out := instruction_attrs.debug(state.mem, state.pc)
+		logger.debug('0x${state.pc:04x} 0x${state.mem[state.pc]:02x} $debug_out.instr_string $state.str()')
+	}
 	exec_result := instruction_attrs.execute(state)?
 	if exec_result.bytes_used == utils.u16_max {
 		return error('bytes used not set for instruction ${state.mem[state.pc]:02x}')
@@ -211,17 +219,7 @@ pub fn (mut state State) step(mut logger log.Log) ?u32 {
 	if exec_result.cycles_used == 0 {
 		return error('got 0 cycles for instruction ${state.mem[state.pc]:02x}')
 	}
-	// Cache the initial program counter for use in logging
-	pc := state.pc
 	state.pc += exec_result.bytes_used
-	// TODO (vcomp): The use of '.str()' here seems to be a bug with the V compiler;
-	// It can't figure out to use the pointer variant of the State struct
-	// when calling the string function automatically while interpolating,
-	// so a manual usage fixes that for now.
-	$if debug {
-		debug_out := instruction_attrs.debug(state.mem, pc)
-		logger.debug('0x${pc:04x} 0x${state.mem[pc]:02x} $debug_out.instr_string $state.str()')
-	}
 	return exec_result.cycles_used
 }
 
