@@ -170,14 +170,14 @@ fn (mut state State) ora(x1, x2 byte) {
 // Pushes x1 and then x2 on to the stack
 fn (mut state State) push(x1, x2 byte) {
 	state.sp -= 2
-	state.mem[state.sp + 1] = x1
+	state.mem[u16(state.sp + 1)] = x1
 	state.mem[state.sp] = x2
 }
 
 // Pops x2 and then x1 off the stack
 fn (mut state State) pop() (byte, byte) {
 	state.sp += 2
-	return state.mem[state.sp - 2], state.mem[state.sp - 1]
+	return state.mem[u16(state.sp - 2)], state.mem[u16(state.sp - 1)]
 }
 
 fn (mut state State) call(ret_addr, jmp_addr u16) {
