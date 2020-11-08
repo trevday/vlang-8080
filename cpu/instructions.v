@@ -3864,11 +3864,11 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 				}
 				execute: fn (mut state State) ?ExecutionResult {
 					psw, a := state.pop()
-					state.flags.z = ((psw & 0x01) == 0x01)
-					state.flags.s = ((psw & 0x02) == 0x02)
+					state.flags.cy = ((psw & 0x01) == 0x01)
 					state.flags.p = ((psw & 0x04) == 0x04)
-					state.flags.cy = ((psw & 0x08) == 0x08)
 					state.flags.ac = ((psw & 0x10) == 0x10)
+					state.flags.z = ((psw & 0x40) == 0x40)
+					state.flags.s = ((psw & 0x80) == 0x80)
 					state.a = a
 					return ExecutionResult{
 						bytes_used: 1
@@ -3946,11 +3946,11 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					psw := (utils.bool_byte(state.flags.z) |
-						(utils.bool_byte(state.flags.s) << 1) |
-						(utils.bool_byte(state.flags.p) << 2) |
-						(utils.bool_byte(state.flags.cy) << 3) |
-						(utils.bool_byte(state.flags.ac) << 4))
+					psw := (utils.bool_byte(state.flags.cy) |
+						(1 << 1) | (utils.bool_byte(state.flags.p) << 2) |
+						(utils.bool_byte(state.flags.ac) << 4) |
+						(utils.bool_byte(state.flags.z) << 6) |
+						(utils.bool_byte(state.flags.s) << 7))
 					state.push(state.a, psw)
 					return ExecutionResult{
 						bytes_used: 1
