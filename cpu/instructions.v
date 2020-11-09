@@ -2858,7 +2858,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, ~state.b, true)
+					state.cmp(state.a, state.b)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2873,7 +2873,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, ~state.c, true)
+					state.cmp(state.a, state.c)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2888,7 +2888,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, ~state.d, true)
+					state.cmp(state.a, state.d)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2903,7 +2903,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, ~state.e, true)
+					state.cmp(state.a, state.e)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2918,7 +2918,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, ~state.h, true)
+					state.cmp(state.a, state.h)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2933,7 +2933,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, ~state.l, true)
+					state.cmp(state.a, state.l)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -2948,8 +2948,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, ~(state.mem[utils.create_address(state.h,
-						state.l)]), true)
+					state.cmp(state.a, state.mem[utils.create_address(state.h, state.l)])
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 7
@@ -2964,7 +2963,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, ~state.a, true)
+					state.cmp(state.a, state.a)
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
@@ -4105,7 +4104,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.execute_addition(state.a, ~(state.mem[state.pc + 1]), true)
+					state.cmp(state.a, state.mem[state.pc + 1])
 					return ExecutionResult{
 						bytes_used: 2
 						cycles_used: 7

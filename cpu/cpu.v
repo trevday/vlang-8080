@@ -152,6 +152,11 @@ fn (mut state State) sbb(x1, x2 byte) {
 	state.a = state.execute_subtraction(x1, x2, state.flags.cy)
 }
 
+fn (mut state State) cmp(x1, x2 byte) {
+	state.execute_addition(x1, ~x2, true)
+	state.flags.cy = x1 < x2
+}
+
 fn (mut state State) set_logic_flags(x byte) {
 	state.set_flags(x)
 	state.flags.cy = false
