@@ -3094,7 +3094,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.adc(state.a, state.mem[state.pc + 1])
+					state.execute_addition_and_store(state.a, state.mem[state.pc + 1])
 					return ExecutionResult{
 						bytes_used: 2
 						cycles_used: 7
