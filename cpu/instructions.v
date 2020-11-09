@@ -664,21 +664,17 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					orig_a, orig_cy := state.a, state.flags.cy
-					if (orig_a & 0xf) > 9 || state.flags.ac {
-						res := u16(state.a) + u16(6)
-						state.flags.cy = orig_cy || (res > 0xff)
-						state.flags.ac = true
-						state.a = byte(res & 0xff)
-					} else {
-						state.flags.ac = false
+					mut orig_cy := state.flags.cy
+					mut diff := byte(0x0)
+					if (state.a & 0xf) > 0x9 || state.flags.ac {
+						diff += 0x06
 					}
-					if orig_a > 0x99 || orig_cy {
-						state.a = state.a + 0x60
-						state.flags.cy = true
-					} else {
-						state.flags.cy = false
+					if state.a > 0x99 || orig_cy {
+						diff += 0x60
+						orig_cy = true
 					}
+					state.execute_addition_and_store(state.a, diff)
+					state.flags.cy = orig_cy
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 4
