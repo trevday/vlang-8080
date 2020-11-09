@@ -1299,7 +1299,7 @@ fn get_attributes(instruction byte) ?InstructionAttributes {
 					}
 				}
 				execute: fn (mut state State) ?ExecutionResult {
-					state.d = state.a
+					state.d = state.b
 					return ExecutionResult{
 						bytes_used: 1
 						cycles_used: 5
