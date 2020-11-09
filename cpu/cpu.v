@@ -166,6 +166,7 @@ fn (mut state State) set_logic_flags(x byte) {
 fn (mut state State) and(x1, x2 byte) {
 	state.a = x1 & x2
 	state.set_logic_flags(state.a)
+	state.flags.ac = (x1 & 0x08 == 0x08) || (x2 & 0x08 == 0x08)
 }
 
 fn (mut state State) xra(x1, x2 byte) {
