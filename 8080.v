@@ -14,7 +14,7 @@ fn main() {
 	mut fp := flag.new_flag_parser(os.args)
 	fp.application('8080 Emulator')
 	fp.version('v0.0.1')
-	fp.description('Emulates program execution for a program designed to run on the Intel 8080 CPU.')
+	fp.description('Emulates program execution for a program designed to run on the Intel 8080 CPU. ARGS should be "help" or one or more paths comprising a single Intel 8080 program.')
 	fp.limit_free_args_to_at_least(1)
 	fp.skip_executable()
 	// All flag definitions
